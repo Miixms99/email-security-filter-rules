@@ -25,6 +25,7 @@ jobs:
           RULE_SUBMISSION: ${{ inputs.submission }}
       - run: node scripts/Controle-Email.cjs --self-test
       - run: node tests/project.test.cjs
+      - run: node tests/publication.test.cjs
       - run: node tests/rule-learning.test.cjs
       - run: node tests/sync-chain.test.cjs
       - name: Commit validated rule
