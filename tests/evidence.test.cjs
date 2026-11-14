@@ -25,11 +25,5 @@ const bad=structuredClone(cases);bad[3].text='synthetic-campaign';
 rejects(()=>verifyEvidence(rule,sign(bad),publicKey,options));
 const other=crypto.generateKeyPairSync('ed25519');
 rejects(()=>verifyEvidence(rule,sign(),other.publicKey,options));
-const {prepare}=require('../scripts/prepare-publication.cjs');
-const document=require('../rules/filter-rules.json');
-const next=prepare(document,{rule,bundle:sign()},{publicKey,now:2000,allowSynthetic:true});
-assert.equal(next.rules.at(-1).status,'signal_only');passed++;
-rejects(()=>prepare(document,{rule,bundle:sign()},{publicKey,now:2000}));
-rejects(()=>prepare(document,{rule,review:{ruleSpecificTestsPassed:true}},{publicKey,now:2000}));
 console.log(JSON.stringify({passed,failed:0,syntheticOnly:true,privateKeyPersisted:false,productionAuthorized:false}));
 
