@@ -15,19 +15,17 @@ jobs:
   publish:
     if: github.actor == github.repository_owner && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
       - run: node scripts/prepare-publication.cjs
         env:
           RULE_SUBMISSION: ${{ inputs.submission }}
-      - run: node scripts/Controle-Email.cjs --self-test
-      - run: node tests/project.test.cjs
-      - run: node tests/publication.test.cjs
-      - run: node tests/rule-learning.test.cjs
-      - run: node tests/sync-chain.test.cjs
+      - name: Syntax-check, validate rules, and run tests
+        run: node scripts/run-tests.cjs
       - name: Commit validated rule
         run: |
           git config user.name 'github-actions[bot]'
@@ -35,4 +33,3 @@ jobs:
           git add rules/filter-rules.json
           git commit -m 'rules: publish reviewed signal-only candidate'
           git push origin HEAD:main
-
