@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-14.4",
-  "generatedAt": "2026-11-14T18:50:00+01:00",
+  "filterRevision": "2026-11-14.5",
+  "generatedAt": "2026-11-14T19:35:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -64,10 +64,59 @@
           "/stayhere/forwared.html",
           "/smalbus/salaminka.html",
           "/hmdbox/hmd-v1-cl3.html"
+        ],
+        "supportingSignals": [
+          "sender local-part is seven random lowercase letters followed by a configured campaign marker",
+          "sender domain is an eight-letter random lowercase label, then a word label, then a rotating parent domain on a .biz, .biz.id, or .my.id public suffix",
+          "display name spoofs a well-known brand or support-team role, such as a Gmail support-team style label, that does not match the sender domain",
+          "health-spam lures such as stop-taking-drug claims for ED, blood-pressure, or prostate products, or a fake celebrity or television-network medical endorsement including Dr. Oz or CBS style claims",
+          "provider mailed-by or similar trust label such as Trusted Sender that does not match the sender domain",
+          "subscription-termination or Final Warning lure that includes a fabricated account identifier"
+        ],
+        "observedRotatingParentDomains": [
+          "mehidjugi.biz",
+          "biztivo.biz",
+          "mahotanic.biz",
+          "adventurebox.biz.id",
+          "xalvexis.my.id"
         ]
       },
-      "requiredCombination": "At least one configured marker or exact parameter and one configured exact path in the same message. A configured host is a supporting infrastructure signal only; it is never sufficient alone and must not be used as a broad shared-cloud-provider block.",
+      "requiredCombination": "At least one configured marker or exact parameter and one configured exact path in the same message. A configured host is a supporting infrastructure signal only; it is never sufficient alone and must not be used as a broad shared-cloud-provider block. Observed rotating parent domains and other supportingSignals are correlating context only and must not be used as domain blocks; a single message per rotating domain is insufficient for campaign.repeated-malicious-sender-domain.v1.",
       "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "campaign.rotating-marker-sender-pattern.v1",
+      "status": "signal_only",
+      "category": "campaign_correlation",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "senderAddressPatterns": [
+          "local-part: seven random lowercase ASCII letters, then a dot, then a configured campaign marker such as 111.957097",
+          "domain: eight random lowercase ASCII letters, then a word label, then a rotating parent domain"
+        ],
+        "parentDomainSuffixes": [
+          ".biz",
+          ".biz.id",
+          ".my.id"
+        ],
+        "observedRotatingParentDomains": [
+          "mehidjugi.biz",
+          "biztivo.biz",
+          "mahotanic.biz",
+          "adventurebox.biz.id",
+          "xalvexis.my.id"
+        ],
+        "supportingSignals": [
+          "spoofed brand or support-team display name, including a Gmail support-team style label, that does not match the sender domain",
+          "health-spam lures including stop-taking-drug claims for ED, blood-pressure, or prostate products and fake Dr. Oz or CBS style medical claims",
+          "provider mailed-by or trust label such as Trusted Sender that does not match the sender domain",
+          "subscription-termination Final Warning lure with a fabricated account identifier"
+        ]
+      },
+      "requiredCombination": "The sender address matches the configured local-part and rotating-domain pattern and contains a configured campaign marker. Supporting lure, display-name, and mailed-by signals raise review priority but are not required. Observed parent domains are examples of rotation only and must never be added as domain blocks from a single message per domain.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not promote observed rotating parent domains into campaign.repeated-malicious-sender-domain.v1 without repeated observations and a legitimate-counterexample review.",
       "privateDataExcluded": true
     },
     {
@@ -270,11 +319,47 @@
         "supportingSignals": [
           "unexpected attachments with generic business-document names and a non-document octet-stream type",
           "urgency around account, phone, or payment-detail changes",
-          "homoglyph or lookalike characters in visible body text"
+          "homoglyph or lookalike characters in visible body text",
+          "Cyrillic or other confusable homoglyphs in the display name",
+          "message preview or body padded with invisible characters",
+          "lure that a phone-number or account-detail update request was submitted or is pending review"
         ]
       },
-      "requiredCombination": "Brand impersonation in the display name plus hidden or ignorable characters plus a sender-domain mismatch. Attachments and urgency claims are supporting only.",
-      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "requiredCombination": "Brand impersonation in the display name plus hidden or ignorable characters plus a sender-domain mismatch. Attachments, urgency claims, preview padding, and typographic homoglyphs are supporting only. Prefer this display-name or brand versus domain mismatch together with hidden-character signals over exact-address blocking, which can miss later messages in the same pattern.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat a message as phishing solely because of invisible-character or preview padding.",
+      "legitimateCounterexamples": [
+        "Genuine billing or receipt mail from the stripe.com payment-processor domain, including receipts-plus or billing-plus local-part prefixes for a known merchant, must not be treated as phishing solely because of invisible-character or preview padding. Such padding is common in legitimate marketing and transactional mail."
+      ],
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.brand-impersonation-unrelated-domain-hidden-chars.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "combinedClaims": [
+          "display name impersonates a well-known brand, including a crypto-exchange customer-assistance role",
+          "display name contains hidden, zero-width, or ignorable formatting characters, or Cyrillic or other confusable homoglyphs",
+          "exact sender domain is an unrelated organisational domain that does not belong to the claimed brand"
+        ],
+        "supportingSignals": [
+          "lure that a phone-number or account-detail update request was submitted or is pending review",
+          "small unexpected attachment",
+          "message preview or body padded with invisible characters",
+          "a previously blocked exact sender address later recurs, showing that per-address blocking is a weak control for this pattern"
+        ],
+        "exampleUnrelatedOrganisationalDomains": [
+          "biocycle-nt.com.au",
+          "ctminternational.org"
+        ]
+      },
+      "requiredCombination": "Brand or official-role impersonation in the display name, plus hidden or ignorable characters or typographic homoglyphs in the display name, plus a sender domain that does not belong to the claimed brand. Phone-update lures, small attachments, and invisible preview padding are supporting only. Listed organisational domains are examples of unrelated or likely-compromised senders, not a block list, because a compromised legitimate organisation may also send ordinary mail.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Prefer the display-name or brand versus domain mismatch together with hidden-character or homoglyph signals over exact-address blocking, which has been observed to miss later messages in the same pattern.",
+      "legitimateCounterexamples": [
+        "Genuine billing or receipt mail from the stripe.com payment-processor domain, including receipts-plus or billing-plus local-part prefixes for a known merchant, must not be treated as phishing solely because of invisible-character or preview padding. Such padding is common in legitimate marketing and transactional mail."
+      ],
       "privateDataExcluded": true
     },
     {
