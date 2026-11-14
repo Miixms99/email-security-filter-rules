@@ -19,3 +19,5 @@ jobs:
       - run: node tests/rule-learning.test.cjs
 
 
+
+      - run: node tests/evidence.test.cjs
