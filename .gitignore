@@ -8,3 +8,6 @@ publieke-bronnen.json
 node_modules/
 
 
+contact-history.json
+enrichment-cache.json
+*.tmp
