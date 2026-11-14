@@ -64,6 +64,23 @@ function assertNoPrivateData(document) {
   });
 }
 
+// Every enabled rule must load into the analyzer exactly as fetch-rules delivers it,
+// so a rule shape the analyzer cannot accept fails CI instead of crashing at runtime.
+function assertRuntimeLoadable(document) {
+  const { runtimeRuleSet } = require('./rule-learning.cjs');
+  const { normalizeCampaignRules } = require('./Controle-Email.cjs');
+  const { normalizeSenderRules, normalizeSignalRules } = require('./signals.cjs');
+  const set = runtimeRuleSet(document);
+  normalizeCampaignRules(set.campaignRules);
+  normalizeSenderRules(set.senderRules);
+  normalizeSignalRules(set.signalRules);
+  const scale = document.severityScale;
+  for (const [index, rule] of document.rules.entries()) {
+    if (scale && rule.severity && Number.isFinite(rule.weight) && scale[rule.severity]?.weight !== rule.weight) fail(`#/rules/${index} weight ${rule.weight} does not match severity ${rule.severity}`);
+  }
+  return set;
+}
+
 function validateDocument(document, schema) {
   if (!document || typeof document !== 'object' || Array.isArray(document)) fail('Rule document must be an object');
   if (!schema || typeof schema !== 'object' || Array.isArray(schema)) fail('Schema must be an object');
@@ -74,6 +91,7 @@ function validateDocument(document, schema) {
     ids.add(rule.id);
   }
   assertNoPrivateData(document);
+  assertRuntimeLoadable(document);
   return { rules: document.rules.length, schemaVersion: document.schemaVersion, filterRevision: document.filterRevision };
 }
 
@@ -88,4 +106,4 @@ if (require.main === module) {
   console.log(`Validated ${result.rules} rules against filter-rules.schema.json (revision ${result.filterRevision}).`);
 }
 
-module.exports = { validateDocument, validateFiles };
+module.exports = { validateDocument, validateFiles, assertRuntimeLoadable };

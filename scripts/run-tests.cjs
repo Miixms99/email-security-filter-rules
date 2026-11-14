@@ -20,7 +20,8 @@ function run(args, label = args.join(' ')) {
 
 const scripts = list('scripts', '.cjs');
 const tests = list('tests', '.cjs');
-for (const file of [...scripts, ...tests]) run(['--check', file], `node --check ${file}`);
+const helpers = fs.existsSync(path.join(root, 'tests/helpers')) ? list('tests/helpers', '.cjs') : [];
+for (const file of [...scripts, ...tests, ...helpers]) run(['--check', file], `node --check ${file}`);
 run(['scripts/validate-rules.cjs']);
 run(['scripts/Controle-Email.cjs', '--self-test']);
 run(['scripts/Controle-Email.cjs', '--evaluate']);

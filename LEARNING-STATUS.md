@@ -3,7 +3,8 @@
 ## Implemented and tested
 
 - Fetch central public GitHub rules with a timeout and status validation.
-- Convert supported campaign rules into the existing analyzer input format.
+- Route every enabled rule by indicator shape (`runtimeRuleSet`): campaign rules to the marker/path matcher, sender rules to the sender matcher, others to signal evaluators or the manual-review list.
+- Evaluate header signals (Authentication-Results, ARC, DMARC alignment, Microsoft anti-spam) and Unicode confusables.
 - Exclude candidate and disabled rules from runtime detection.
 - Discover candidate marker/path combinations from at least three reviewed abstractions.
 - Reject a combination when a supplied legitimate counterexample matches it.
