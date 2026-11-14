@@ -3,10 +3,17 @@
 const crypto=require('node:crypto');
 function discover(observations){
  if(!Array.isArray(observations)||observations.length>1000)throw Error('Invalid observations');
- const groups=new Map();
+ const groups=new Map(), seen=new Map();
  for(const o of observations){
   if(o.publicSafeReviewed!==true||!['Gmail','Outlook'].includes(o.provider)||!['confirmed_suspicious','legitimate'].includes(o.verdict))throw Error('Reviewed provenance required');
   if(!/^[a-z][a-z-]{2,60}$/.test(o.marker)||!/^\/[a-z/-]{3,100}$/.test(o.exactPath))throw Error('Only abstract alphabetic markers and paths allowed');
+  if(typeof o.observationRef!=='string'||!/^obs-[a-f0-9]{32}$/.test(o.observationRef))throw Error('Opaque observation reference required');
+  const canonical=JSON.stringify([o.provider,o.marker,o.exactPath,o.verdict]);
+  if(seen.has(o.observationRef)){
+   if(seen.get(o.observationRef)!==canonical)throw Error('Conflicting duplicate observation');
+   continue;
+  }
+  seen.set(o.observationRef,canonical);
   const key=JSON.stringify([o.marker,o.exactPath]);
   const g=groups.get(key)||{marker:o.marker,exactPath:o.exactPath,suspicious:0,legitimate:0,providers:new Set()};
   g[o.verdict==='legitimate'?'legitimate':'suspicious']++;g.providers.add(o.provider);groups.set(key,g);
