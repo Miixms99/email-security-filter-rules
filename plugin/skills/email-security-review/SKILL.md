@@ -5,7 +5,7 @@ description: Review Gmail and Outlook messages for phishing, suspicious spam, an
 
 # Email Security Review
 
-**Code version:** `0.3.2`  
+**Code version:** `0.3.3`  
 **Bundled filter revision:** `2026-11-14.2`  
 **Central rules:** `https://github.com/miixmss/email-security-filter-rules/blob/main/rules/filter-rules.json`
 
@@ -86,3 +86,11 @@ If the connected tools lack report or block support, check the available in-app 
 Use `fully_handled` only when reporting, exact-address blocking and recoverable movement are all individually verified for the same message. Otherwise use `partially_handled` or `not_handled`. At batch level, report verified counts separately for each action and list failed/unconfirmed steps. Moving 46 messages proves only movement, not reporting or blocking.
 
 When repairing earlier incomplete work, select only the exact previously recorded message IDs. Never apply a repair action to all Deleted Items based solely on counts. Leave designated uncertain/retained messages untouched.
+
+## Unwanted advertising preference
+
+Include clearly identified unwanted advertising and promotional bulk mail already in Gmail Spam or Outlook Junk in the authorized cleanup scope. Treat unwanted advertising as spam, never as phishing solely because it is promotional. Preserve the security assessment separately from the owner's preference not to receive advertising.
+
+Apply the same verified sequence: preserve evidence and recovery details, report as spam, block the exact sender address, then move recoverably to Trash/Deleted Items. If any required action is unavailable, failed or unconfirmed, stop and report partial completion. Do not treat this preference as authorization to sweep all Inbox mail or to block legitimate transactional/account notices from mixed-use senders without review. Leave uncertain messages and specifically retained exceptions untouched. Do not open unsubscribe links.
+
+This standing preference applies in future active reviews using this plugin; it does not assert that any previous batch actions were completed.
