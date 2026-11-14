@@ -379,6 +379,13 @@ function inputMessages(input) {
       attachments: attachments.map(x => ({ filename: String(x.filename || '').slice(0, 260), mime: String(x.mime || '').toLowerCase().slice(0, 200) })) };
   });
 }
+// Optional output of scripts/enrich.cjs (RDAP, URLhaus, Spamhaus DBL, first contact).
+function normalizeEnrichment(value) {
+  if (value === undefined) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.schemaVersion !== 1) fail('Invalid enrichment');
+  for (const key of ['domains', 'hosts', 'senders']) if (value[key] !== undefined && (typeof value[key] !== 'object' || Array.isArray(value[key]) || Object.keys(value[key]).length > 2000)) fail('Invalid enrichment ' + key);
+  return value;
+}
 function bundledRuleSet() {
   const { runtimeRuleSet } = require('./rule-learning.cjs');
   return runtimeRuleSet(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'rules', 'filter-rules.json'), 'utf8')));
@@ -391,6 +398,7 @@ function analyze(input, loaded = readCache()) {
   const senderRules = signalsLib.normalizeSenderRules(input.senderRules ?? bundled.senderRules);
   const signalRules = signalsLib.normalizeSignalRules(input.signalRules ?? bundled.signalRules);
   const manualOnly = new Set();
+  const enrichment = normalizeEnrichment(input.enrichment);
   // Validated indexes and per-batch memoization never enter the public cache.
   const indexes = loaded.indexes || Object.fromEntries(Object.entries(loaded.cache.sources).map(([name, record]) => [name, parseSource(name, record.text)]));
   const psl = indexes.psl, feed = indexes.openphish?.entries;
@@ -455,7 +463,7 @@ function analyze(input, loaded = readCache()) {
     const auth = signalsLib.parseAuthResults(message.headers), ms = signalsLib.parseMsAntispam(message.headers);
     const orgDomain = host => { const r = domain(host); return sourceInfo.psl.status === 'current' && r.status === 'known' ? r.value : null; };
     const alignment = signalsLib.dmarcAlignment(auth, from.status === 'parsed' ? from.hostname : null, orgDomain);
-    const ctx = { auth, ms, alignment, from: from.status === 'parsed' ? from : null, replyComparison, linkComparisons, urlFindings, displayName: message.displayName, orgDomain, attachments: message.attachments, input };
+    const ctx = { auth, ms, alignment, from: from.status === 'parsed' ? from : null, replyComparison, linkComparisons, urlFindings, displayName: message.displayName, text: message.text, orgDomain, attachments: message.attachments, enrichment };
     const configuredSignalMatches = [];
     let signalWeight = 0;
     for (const rule of signalRules) {
@@ -941,7 +949,7 @@ async function main() {
   const [command, ...extra] = process.argv.slice(2);
   if (extra.length) fail('Unexpected arguments');
   let result;
-  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--regression', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
+  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--regression', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean,enrichment?:<output of scripts/enrich.cjs>} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
   else if (command === '--self-test') result = selfTest();
   else if (command === '--evaluate') result = evaluate();
   else if (command === '--status') result = { mode: 'public_source_status', sources: statuses(readCache()) };
@@ -954,7 +962,7 @@ async function main() {
   else fail('Usage: node Controle-Email.cjs --help | --self-test | --evaluate | --regression | --status | --refresh | --analyze | --extract | --plan | --retry-plan. See --help for bounded JSON stdin formats.');
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }
-module.exports = { defaultCacheDir, assertStorage, parseUrl, parsePsl, registeredDomain, parseOpenPhish, validateCache, validateRecord, sourceStatus, normalizeCampaignRules, campaignMatches, analyze, extractMail, extractOutlook, planScans, retryPlan, resumePlan, workflowPlan, regressionEvidence, selfTest, evaluate, SOURCES };
+module.exports = { CACHE_ROOT: ROOT, readCache, defaultCacheDir, assertStorage, parseUrl, parsePsl, registeredDomain, parseOpenPhish, validateCache, validateRecord, sourceStatus, normalizeCampaignRules, campaignMatches, analyze, extractMail, extractOutlook, planScans, retryPlan, resumePlan, workflowPlan, regressionEvidence, selfTest, evaluate, SOURCES };
 if (require.main === module) main().catch(error => { process.stderr.write(JSON.stringify({ status: 'failed', reason: error.message }) + '\n'); process.exitCode = 1; });
 
 
