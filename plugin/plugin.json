@@ -1,0 +1,32 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "email-security-review",
+  "version": "0.3.0",
+  "description": "Safely review Gmail and Outlook messages for phishing, suspicious spam, and legitimate mail.",
+  "keywords": [
+    "email",
+    "phishing",
+    "spam",
+    "gmail",
+    "outlook",
+    "security"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Email Security Review",
+        "shortDescription": "Review email safely for phishing and spam",
+        "longDescription": "Reviews available message data, headers, authentication, and links without opening suspicious content or performing mailbox actions without authorization.",
+        "developerName": "Grok Bot",
+        "category": "Productivity",
+        "capabilities": [
+          "Read"
+        ],
+        "defaultPrompt": [
+          "Review my recent emails for phishing and suspicious spam.",
+          "Assess this message and briefly explain the observed security signals."
+        ]
+      }
+    }
+  }
+}
