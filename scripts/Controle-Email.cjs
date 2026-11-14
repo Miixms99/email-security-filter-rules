@@ -670,7 +670,7 @@ function evaluate() {
   const record=(name,text)=>({sourceUrl:SOURCES[name].url,text,sha256:hash(text),count:parseSource(name,text).count,retrievedAt:now,validatedAt:now,publishedAt:null,etag:null,lastModified:null});
   const loaded={status:'loaded',cache:{schemaVersion:1,sources:{psl:record('psl',psl),openphish:record('openphish',malicious+'\n')}}};
   const base={mailbox:'synthetic',messageId:'case',text:'',urls:[]};
-  const campaignRules=[{id:'campaign.marker_and_path.v1',markers:['111.957097'],urlParameters:[{name:'sq',value:'111-957097'}],exactPaths:['/worklinks/proforward.html']}];
+  const campaignRules=bundledRuleSet().campaignRules;
   const cases=[
     ['legitimate_cloud_document',false,'Cloud host alone is no risk signal',{text:'Here is the requested project document.',urls:['https://docs.google.com/document/d/example']}],
     ['legitimate_external_reply_service',false,'A different reply service alone remains supporting context',{fromAddress:'newsletter@shop.com',replyTo:'response@mailer.com',text:'Your monthly newsletter',urls:[]}],
@@ -933,9 +933,6 @@ function privateDataPath(name) {
   if (!DATA_ROOT) throw new Error('Set EMAILCONTROL_DATA_DIR to a private local directory; never commit its contents.');
   return path.join(DATA_ROOT, name);
 }
-async function regressionEvidence() {
-  throw new Error('Historical private-mail regression is local-only. Public CI uses synthetic self-tests and evaluation.');
-}
 async function readUtf8(stream, limit, onLimit = () => {}) {
   const chunks = []; let bytes = 0;
   for await (const chunk of stream) {
@@ -949,7 +946,7 @@ async function main() {
   const [command, ...extra] = process.argv.slice(2);
   if (extra.length) fail('Unexpected arguments');
   let result;
-  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--regression', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean,enrichment?:<output of scripts/enrich.cjs>} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
+  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean,enrichment?:<output of scripts/enrich.cjs>} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
   else if (command === '--self-test') result = selfTest();
   else if (command === '--evaluate') result = evaluate();
   else if (command === '--status') result = { mode: 'public_source_status', sources: statuses(readCache()) };
@@ -958,11 +955,10 @@ async function main() {
   else if (command === '--extract') { const input = JSON.parse(await readUtf8(process.stdin, MAX_INPUT)); if(input.providerFormat!==undefined&&!['gmail_full','outlook_message'].includes(input.providerFormat))fail('Unsupported extraction provider');result = input.providerFormat==='outlook_message'?extractOutlook(input.mailbox,input.full,input.folderMap):extractMail(input.mailbox, input.full); }
   else if (command === '--retry-plan') { const input=JSON.parse(await readUtf8(process.stdin,MAX_INPUT));result=retryPlan(input.jobs,input.attempts); }
   else if (command === '--plan') result = await workflowPlan(JSON.parse(await readUtf8(process.stdin, MAX_INPUT)));
-  else if (command === '--regression') { result = await regressionEvidence(); if (!result.complete) process.exitCode = 2; }
-  else fail('Usage: node Controle-Email.cjs --help | --self-test | --evaluate | --regression | --status | --refresh | --analyze | --extract | --plan | --retry-plan. See --help for bounded JSON stdin formats.');
+  else fail('Usage: node Controle-Email.cjs --help | --self-test | --evaluate | --status | --refresh | --analyze | --extract | --plan | --retry-plan. See --help for bounded JSON stdin formats.');
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }
-module.exports = { CACHE_ROOT: ROOT, readCache, defaultCacheDir, assertStorage, parseUrl, parsePsl, registeredDomain, parseOpenPhish, validateCache, validateRecord, sourceStatus, normalizeCampaignRules, campaignMatches, analyze, extractMail, extractOutlook, planScans, retryPlan, resumePlan, workflowPlan, regressionEvidence, selfTest, evaluate, SOURCES };
+module.exports = { CACHE_ROOT: ROOT, readCache, defaultCacheDir, assertStorage, parseUrl, parsePsl, registeredDomain, parseOpenPhish, validateCache, validateRecord, sourceStatus, normalizeCampaignRules, campaignMatches, analyze, extractMail, extractOutlook, planScans, retryPlan, resumePlan, workflowPlan, selfTest, evaluate, SOURCES };
 if (require.main === module) main().catch(error => { process.stderr.write(JSON.stringify({ status: 'failed', reason: error.message }) + '\n'); process.exitCode = 1; });
 
 
