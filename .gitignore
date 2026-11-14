@@ -1,0 +1,10 @@
+email-bewijs.json
+email-register.json
+publieke-bronnen.json
+.env*
+*.zip
+*.jpg
+*.png
+node_modules/
+
+
