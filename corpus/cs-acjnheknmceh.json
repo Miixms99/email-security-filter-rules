@@ -1,0 +1,30 @@
+{
+  "id": "cs-acjnheknmceh",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "fzywzhw.111.957097@kwrzjzyn.besegu.babuna.biz",
+  "senderDisplayName": "[NAME]",
+  "subject": "Our 10 Favorite Holiday Deals on Amazon That Started Today",
+  "lureSnippets": [
+    "Our 10 Favorite Early Holiday Deals That Just Went Live on Amazon",
+    "Amazon kicked off the shopping season in a BIG way with their October Prime Day sale. Since that is now over, Amazon has already launched thousands of early holiday deals! Know what that means? Deal Watchdogs got to sniff out our 10 favorite early holiday deals for you to shop on Amazon, plus shop our own exclusive holiday deals at up to 70% off! Amazon can only dreams of having these finds on sale!",
+    "Shop Our 10 Favorite Early Holidays on Amazon Now",
+    "This is an advertisement.",
+    "To discontinue receipt of notifications from this"
+  ],
+  "linkHostsAndPaths": [
+    "https://i.imgur.com/KLbmjpB.jpeg",
+    "https://storage.googleapis.com/managelink/newligne.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); display name set to the recipient's own mailbox name; links were never opened or fetched",
+  "redactionApplied": [
+    "NAME"
+  ]
+}
