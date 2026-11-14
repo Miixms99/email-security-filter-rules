@@ -14,5 +14,7 @@ jobs:
       - run: node scripts/Controle-Email.cjs --self-test
       - run: node scripts/Controle-Email.cjs --evaluate
       - run: node tests/project.test.cjs
+      - run: node tests/sync-chain.test.cjs
+      - run: node tests/rule-learning.test.cjs
 
 
