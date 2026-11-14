@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-14.5",
-  "generatedAt": "2026-11-14T19:35:00+01:00",
+  "filterRevision": "2026-11-14.6",
+  "generatedAt": "2026-11-14T19:50:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -113,7 +113,11 @@
           "health-spam lures including stop-taking-drug claims for ED, blood-pressure, or prostate products and fake Dr. Oz or CBS style medical claims",
           "provider mailed-by or trust label such as Trusted Sender that does not match the sender domain",
           "subscription-termination Final Warning lure with a fabricated account identifier"
-        ]
+        ],
+        "senderAddressRegex": {
+          "localPart": "^[a-z]{7}\\.111\\.957097$",
+          "domain": "^[a-z]{8}\\.[a-z]{2,24}\\.[a-z0-9-]{2,40}\\.(biz|biz\\.id|my\\.id)$"
+        }
       },
       "requiredCombination": "The sender address matches the configured local-part and rotating-domain pattern and contains a configured campaign marker. Supporting lure, display-name, and mailed-by signals raise review priority but are not required. Observed parent domains are examples of rotation only and must never be added as domain blocks from a single message per domain.",
       "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not promote observed rotating parent domains into campaign.repeated-malicious-sender-domain.v1 without repeated observations and a legitimate-counterexample review.",
@@ -161,6 +165,7 @@
       "id": "auth.spf-fail-or-softfail.v1",
       "status": "signal_only",
       "category": "authentication",
+      "evaluator": "auth_result_tokens",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -177,6 +182,7 @@
       "id": "auth.dkim-fail-or-none.v1",
       "status": "signal_only",
       "category": "authentication",
+      "evaluator": "auth_result_tokens",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -193,6 +199,7 @@
       "id": "auth.dmarc-fail.v1",
       "status": "signal_only",
       "category": "authentication",
+      "evaluator": "auth_result_tokens",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -208,6 +215,7 @@
       "id": "auth.missing-or-inconsistent-headers.v1",
       "status": "signal_only",
       "category": "authentication",
+      "evaluator": "auth_missing_or_inconsistent",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -225,6 +233,7 @@
       "id": "auth.return-path-from-mismatch.v1",
       "status": "signal_only",
       "category": "authentication",
+      "evaluator": "return_path_mismatch",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -293,6 +302,7 @@
       "id": "identity.reply-to-mismatch.v1",
       "status": "signal_only",
       "category": "identity",
+      "evaluator": "reply_to_mismatch",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -443,6 +453,7 @@
       "id": "link.visible-href-domain-mismatch.v1",
       "status": "signal_only",
       "category": "link",
+      "evaluator": "link_visible_mismatch",
       "severity": "medium",
       "weight": 2,
       "indicators": {
@@ -474,6 +485,7 @@
       "id": "link.storage-or-free-host-html.v1",
       "status": "signal_only",
       "category": "link",
+      "evaluator": "host_html_path",
       "severity": "low",
       "weight": 1,
       "indicators": {
@@ -491,6 +503,129 @@
       },
       "requiredCombination": "A link points to an HTML page on shared object storage or free hosting. The shared host, including storage.googleapis.com, is never sufficient alone and must not be used as a broad provider block. Raise review priority only when combined with a configured campaign marker, exact path, brand mismatch, or credential or payment lure.",
       "verdictEffect": "Supporting review signal only. A cloud or free-host HTML link alone must never block or classify a message.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.dmarc-alignment-fail.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "evaluator": "dmarc_alignment",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "alignmentMode": "relaxed",
+        "comparison": "organizational domain of header.from versus passing smtp.mailfrom (SPF) or header.d (DKIM) using the current Public Suffix List",
+        "source": "topmost Authentication-Results header added by the receiving provider"
+      },
+      "requiredCombination": "The receiving provider did not report dmarc=pass, and neither a passing SPF domain nor a passing DKIM signing domain shares the organizational domain of the visible From domain. Requires a current Public Suffix List; an unknown boundary never matches.",
+      "verdictEffect": "Supporting review signal only. Mailing lists and forwarders can break alignment for legitimate mail; never block or classify from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.ms-compauth-fail.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "evaluator": "ms_compauth",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "compauthResults": [
+          "fail"
+        ],
+        "header": "Authentication-Results compauth= (Microsoft 365 / Outlook.com composite authentication)",
+        "reference": "https://learn.microsoft.com/en-us/defender-office-365/message-headers-eop-mdo"
+      },
+      "requiredCombination": "The topmost Authentication-Results header added by Microsoft reports compauth=fail. Only meaningful for Outlook mailboxes.",
+      "verdictEffect": "Supporting review signal only; Microsoft's own spoof verdict, not proof of malice. Forwarded mail can fail composite authentication.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "provider.ms-verdict.v1",
+      "status": "signal_only",
+      "category": "provider_verdict",
+      "evaluator": "ms_verdict",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "sclMin": 5,
+        "bclMin": 7,
+        "categories": [
+          "PHSH",
+          "HPHSH",
+          "SPOOF",
+          "HSPM",
+          "MALW",
+          "DIMP",
+          "UIMP",
+          "GIMP"
+        ],
+        "safetyTips": [
+          "9.19",
+          "9.20",
+          "9.25"
+        ],
+        "headers": [
+          "X-Forefront-Antispam-Report",
+          "X-Microsoft-Antispam"
+        ],
+        "reference": "https://learn.microsoft.com/en-us/defender-office-365/anti-spam-bulk-complaint-level-bcl-about"
+      },
+      "requiredCombination": "Microsoft anti-spam headers report SCL of at least 5, BCL of at least 7, a phishing, spoof, impersonation, high-confidence spam or malware category, or an impersonation or first-contact safety tip. Only meaningful for Outlook mailboxes.",
+      "verdictEffect": "Supporting review signal only. In cloud mailboxes SCL is informational and BCL also flags legitimate newsletters; combine with an independent identity, authentication, campaign or link signal.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.unicode-confusable-mixed-script.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "evaluator": "unicode_confusable",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "checks": [
+          "zero-width, bidi-control or other invisible formatting characters in the display name or sender local part",
+          "a single word mixing Latin with Cyrillic or Greek letters",
+          "mathematical or fullwidth compatibility letter forms",
+          "punycode (xn--) sender or link domain whose Unicode form mixes scripts",
+          "confusable skeleton that spells a listed brand although the visible text does not"
+        ],
+        "confusables": "compact Latin, Cyrillic and Greek subset of Unicode UTS #39 confusables bundled in scripts/signals.cjs",
+        "brands": [
+          "binance",
+          "coinbase",
+          "paypal",
+          "microsoft",
+          "outlook",
+          "office",
+          "google",
+          "gmail",
+          "apple",
+          "icloud",
+          "amazon",
+          "netflix",
+          "facebook",
+          "instagram",
+          "whatsapp",
+          "linkedin",
+          "dhl",
+          "postnl",
+          "ups",
+          "fedex",
+          "ing",
+          "rabobank",
+          "abnamro",
+          "bunq",
+          "belastingdienst",
+          "digid",
+          "stripe",
+          "openai",
+          "chatgpt",
+          "github"
+        ],
+        "reference": "https://www.unicode.org/reports/tr39/"
+      },
+      "requiredCombination": "At least one invisible formatting character, mixed-script word, compatibility letter form, mixed-script punycode domain or confusable brand skeleton in the display name, sender local part, sender domain or a link host. Text entirely in one non-Latin script does not match.",
+      "verdictEffect": "Supporting review signal; raise priority when combined with a brand claim and an unrelated sender domain. Never block or classify from this rule alone.",
       "privateDataExcluded": true
     }
   ]

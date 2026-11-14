@@ -1,7 +1,5 @@
 # Publication procedure
 
-The current installed plugin has not been changed by this pull request.
-
 1. Review the pull request diff, including privacy checks and all test results.
 2. Require successful GitHub Actions on the exact commit to publish.
 3. Review Gmail and Outlook coverage separately. A missing provider is incomplete coverage.
@@ -33,7 +31,7 @@ Historical message IDs, source hashes, evidence files, screenshots, register dat
 local backup configuration, and the public feed cache are intentionally excluded.
 The historical regression command requires a private local harness and is unavailable
 in this public build. EMAILCONTROL_DATA_DIR points to private local state when planning.
-EMAILCONTROL_CACHE_DIR may select a disposable public-source cache.
+ESF_CACHE_DIR (legacy EMAILCONTROL_CACHE_DIR) selects the public-source cache; see README.
 
 ## Version policy
 
@@ -42,3 +40,9 @@ plugin version. Never claim a package version is deployed solely because it exis
 in GitHub. A rollback republishes a verified previous package and reverts rules by commit.
 
 
+
+## Gate scope
+
+`prepare-publication.cjs` and `rule-learning.cjs discover()` accept only campaign candidates with one
+lowercase alphabetic marker and one exact path. Other rule types (sender, header and signal rules) are
+added through a reviewed pull request with synthetic tests instead of the workflow.
