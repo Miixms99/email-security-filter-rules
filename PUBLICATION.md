@@ -29,8 +29,9 @@ Without GitHub write access or executable tests, updates remain pending.
 scripts/Controle-Email.cjs contains the local analysis implementation and synthetic tests.
 Historical message IDs, source hashes, evidence files, screenshots, register data,
 local backup configuration, and the public feed cache are intentionally excluded.
-The historical regression command requires a private local harness and is unavailable
-in this public build. EMAILCONTROL_DATA_DIR points to private local state when planning.
+Historical private-mail regression runs are not part of this public build; CI uses
+synthetic tests only. The publication gate binds an active-chat review to the exact
+rule by a canonical SHA-256 digest (scripts/chat-review.cjs). EMAILCONTROL_DATA_DIR points to private local state when planning.
 ESF_CACHE_DIR (legacy EMAILCONTROL_CACHE_DIR) selects the public-source cache; see README.
 
 ## Version policy

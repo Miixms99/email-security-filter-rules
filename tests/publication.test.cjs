@@ -1,7 +1,9 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {prepare}=require('../scripts/prepare-publication.cjs');
-const {digest}=require('../scripts/verify-evidence.cjs');
+const {digest,canonical}=require('../scripts/chat-review.cjs');
+assert.equal(canonical({b:1,a:[{d:2,c:3}]}),canonical({a:[{c:3,d:2}],b:1}));
+assert.notEqual(digest({a:1}),digest({a:2}));
 const doc=require('../rules/filter-rules.json');
 const rule={id:'synthetic.chat.v1',status:'candidate',category:'campaign_correlation',privateDataExcluded:true,indicators:{markers:['synthetic-campaign'],exactPaths:['/synthetic/campaign']}};
 const cases=[true,true,true,false,false,false].map((expectedMatch,i)=>({provider:i%2?'Gmail':'Outlook',observationRef:'obs-'+String(i).padStart(32,'0'),reviewedGroup:'group-'+i,expectedMatch,text:expectedMatch?'synthetic-campaign':'ordinary document',urls:['https://example.com/synthetic/campaign']}));

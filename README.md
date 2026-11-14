@@ -4,6 +4,8 @@ Signal-only phishing and spam detection rules plus a local, observe-only analyze
 a personal Gmail and Outlook setup. The repository is public: it holds abstracted
 signals only, never email content.
 
+*Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes.*
+
 ## How it fits together
 
 | Part | Path | Role |
@@ -16,7 +18,7 @@ signals only, never email content.
 | Enrichment | `scripts/enrich.cjs` | Optional network step: RDAP domain age, URLhaus and Spamhaus DBL (only with keys), and the hashed first-contact history. Its output is passed to the analyzer as `enrichment`. |
 | Rule loader | `scripts/fetch-rules.cjs` | Fetches the rules from GitHub (or `--local`), validates them like CI and prints analyzer-ready rule sets. |
 | Validator | `scripts/validate-rules.cjs` | Schema, policy flags, unique IDs, private-data scan, severity/weight consistency, and a runtime-load check of every enabled rule. |
-| Publication gate | `scripts/prepare-publication.cjs`, `scripts/chat-review.cjs`, `scripts/verify-evidence.cjs` | Reviewed candidate publication (see `PUBLICATION.md`). |
+| Publication gate | `scripts/prepare-publication.cjs`, `scripts/chat-review.cjs` | Reviewed candidate publication (see `PUBLICATION.md`). |
 | Plugin | `plugin/` | Assistant instructions (`email-security-review` skill) for the review workflow. |
 | Tests | `tests/`, `scripts/run-tests.cjs` | Offline, synthetic-only test suite run by CI. |
 
@@ -159,7 +161,7 @@ Storage paths are confined to their directory: no `..` traversal, no symbolic li
 
 1. **Daily check.** The assistant reviews Gmail Spam, Outlook Junk and recent inbox mail through the providers' web interfaces using the plugin instructions. Mailbox actions (report, block the exact sender, move to Trash) are taken there and verified one by one.
 2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump.
-3. **Pull request.** The changes go on a branch with a pull request whose title states concretely what changed. Nothing is pushed directly to `main`.
+3. **Pull request.** The changes go on a branch with a pull request whose title states concretely what changed. Nothing is pushed directly to `main`. The only exception is the owner-triggered `publish-rule.yml` workflow, which commits one reviewed campaign candidate after the full test suite passes.
 4. **CI.** `.github/workflows/validate.yml` runs `node scripts/run-tests.cjs` on Node 20 and 22.
 5. **Merge.** The pull request is merged only after CI passes. Clients that fetch `main` see the new rules immediately.
 
