@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-14.6",
-  "generatedAt": "2026-11-14T19:50:00+01:00",
+  "filterRevision": "2026-11-14.7",
+  "generatedAt": "2026-11-14T20:10:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -435,6 +435,7 @@
       "id": "attachment.unexpected-html-zip-iso.v1",
       "status": "signal_only",
       "category": "attachment",
+      "evaluator": "attachment_types",
       "severity": "medium",
       "weight": 2,
       "indicators": {
@@ -443,6 +444,33 @@
           "zip or similar archive attachment",
           "iso or disk-image attachment",
           "executable or macro-enabled document attachment"
+        ],
+        "extensions": [
+          "zip",
+          "rar",
+          "7z",
+          "gz",
+          "iso",
+          "img",
+          "vhd",
+          "vhdx",
+          "exe",
+          "scr",
+          "msi",
+          "js",
+          "jse",
+          "vbs",
+          "vbe",
+          "wsf",
+          "hta",
+          "lnk",
+          "bat",
+          "cmd",
+          "ps1",
+          "docm",
+          "xlsm",
+          "pptm",
+          "one"
         ]
       },
       "requiredCombination": "An unexpected HTML, archive, disk-image, executable, or macro-enabled attachment is present. Treat the type as a supporting signal; raise review priority when combined with a lure, brand mismatch, or campaign indicator. Expected archives from a known correspondent remain counterexamples.",
@@ -626,6 +654,187 @@
       },
       "requiredCombination": "At least one invisible formatting character, mixed-script word, compatibility letter form, mixed-script punycode domain or confusable brand skeleton in the display name, sender local part, sender domain or a link host. Text entirely in one non-Latin script does not match.",
       "verdictEffect": "Supporting review signal; raise priority when combined with a brand claim and an unrelated sender domain. Never block or classify from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "attachment.html-smuggling-or-qr.v1",
+      "status": "signal_only",
+      "category": "attachment",
+      "evaluator": "attachment_types",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "extensions": [
+          "html",
+          "htm",
+          "shtml",
+          "xhtml",
+          "svg",
+          "mht",
+          "mhtml"
+        ],
+        "mimePrefixes": [
+          "text/html",
+          "image/svg+xml",
+          "application/xhtml+xml",
+          "message/rfc822"
+        ],
+        "technique": "HTML smuggling: a local HTML or SVG attachment builds a credential form or payload in the browser, bypassing link scanners"
+      },
+      "requiredCombination": "An HTML, SVG or MHT attachment is present, judged from the filename extension or MIME type only. The attachment is never opened.",
+      "verdictEffect": "Supporting review signal; legitimate senders rarely attach HTML or SVG pages. Combine with a lure or an identity mismatch before treating it as phishing.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "attachment.qr-image-bait.v1",
+      "status": "signal_only",
+      "category": "attachment",
+      "evaluator": "attachment_qr_bait",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "mediaExtensions": [
+          "png",
+          "jpg",
+          "jpeg",
+          "gif",
+          "webp",
+          "bmp",
+          "pdf"
+        ],
+        "mediaMimePrefixes": [
+          "image/",
+          "application/pdf"
+        ],
+        "maxTextLength": 200,
+        "technique": "QR-code phishing (quishing): the destination is hidden inside an image or PDF so URL scanners see no link"
+      },
+      "requiredCombination": "An image or PDF attachment, at most 200 characters of text, and no extractable link. QR codes are not decoded; this flags the delivery shape only.",
+      "verdictEffect": "Supporting review signal only; scanned documents and photos share this shape. Never open the attachment or scan the code.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "attachment.ics-invite-lure.v1",
+      "status": "signal_only",
+      "category": "attachment",
+      "evaluator": "calendar_invite_lure",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "extensions": [
+          "ics",
+          "ical",
+          "ifb",
+          "vcs"
+        ],
+        "mimePrefixes": [
+          "text/calendar"
+        ],
+        "trustedLinkDomains": [
+          "google.com",
+          "microsoft.com",
+          "office.com",
+          "live.com",
+          "zoom.us",
+          "teams.microsoft.com"
+        ],
+        "technique": "calendar-invite phishing: an unexpected invite places a credential or payment link in the calendar, outside the mail filter's view"
+      },
+      "requiredCombination": "A calendar attachment plus at least one link whose organizational domain differs from the sender's and is not a listed meeting or calendar provider. Requires a current Public Suffix List.",
+      "verdictEffect": "Supporting review signal only; external meeting links are common. Combine with first contact or a lure.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "domain.newly-registered.v1",
+      "status": "signal_only",
+      "category": "domain_reputation",
+      "evaluator": "domain_age",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "maxAgeDays": 30,
+        "source": "RDAP registration event via https://rdap.org, collected by scripts/enrich.cjs (domain names only, cached)"
+      },
+      "requiredCombination": "The organizational domain of the sender or of a link was registered at most 30 days ago according to RDAP. Missing RDAP data (for example some country-code TLDs) never matches.",
+      "verdictEffect": "Supporting review signal; new legitimate businesses also have young domains. Combine with a brand claim, lure or authentication signal.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "link.urlhaus-listed.v1",
+      "status": "signal_only",
+      "category": "domain_reputation",
+      "evaluator": "urlhaus_host",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "source": "URLhaus host lookup (https://urlhaus.abuse.ch/api/) by scripts/enrich.cjs",
+        "requiresEnvironment": "URLHAUS_AUTH_KEY (free abuse.ch Auth-Key); inactive when unset"
+      },
+      "requiredCombination": "A link host in the message is currently listed by URLhaus as distributing malware.",
+      "verdictEffect": "Strong review signal; never open the link. Still not an automatic verdict or mailbox action.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "domain.spamhaus-dbl.v1",
+      "status": "signal_only",
+      "category": "domain_reputation",
+      "evaluator": "spamhaus_dbl",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "source": "Spamhaus DBL via Data Query Service (dbl.dq.spamhaus.net), queried by scripts/enrich.cjs",
+        "requiresEnvironment": "SPAMHAUS_DQS_KEY; inactive when unset",
+        "listedAnswers": "127.0.1.x",
+        "errorAnswers": "127.255.255.x is a query error, never a listing"
+      },
+      "requiredCombination": "The organizational domain of the sender or of a link returns a 127.0.1.x DBL answer. Error answers (127.255.255.x), timeouts and NXDOMAIN never match.",
+      "verdictEffect": "Strong review signal; still not an automatic verdict or mailbox action.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.first-contact-brand-claim.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "evaluator": "first_contact_brand",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "history": "salted HMAC-SHA256 hashes of organizational sender domains in EMAILCONTROL_DATA_DIR/contact-history.json, written only when recordContacts is requested",
+        "brands": [
+          "binance",
+          "coinbase",
+          "paypal",
+          "microsoft",
+          "outlook",
+          "office",
+          "google",
+          "gmail",
+          "apple",
+          "icloud",
+          "amazon",
+          "netflix",
+          "facebook",
+          "instagram",
+          "whatsapp",
+          "linkedin",
+          "dhl",
+          "postnl",
+          "ups",
+          "fedex",
+          "ing",
+          "rabobank",
+          "abnamro",
+          "bunq",
+          "belastingdienst",
+          "digid",
+          "stripe",
+          "openai",
+          "chatgpt",
+          "github"
+        ]
+      },
+      "requiredCombination": "The sender's organizational domain has no entry in the local contact history and the display name (confusable skeleton) claims a listed brand that does not appear in the sender domain.",
+      "verdictEffect": "Supporting review signal, comparable to a first-contact safety tip. Seed the history from known legitimate mail first; an empty history makes every sender a first contact.",
       "privateDataExcluded": true
     }
   ]

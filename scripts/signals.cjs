@@ -192,15 +192,14 @@ function senderMatches(address, rules) {
 }
 
 const EVALUATORS = Object.freeze(['auth_result_tokens', 'auth_missing_or_inconsistent', 'return_path_mismatch', 'reply_to_mismatch', 'link_visible_mismatch',
-  'host_html_path', 'dmarc_alignment', 'ms_compauth', 'ms_verdict', 'unicode_confusable']);
-const EXTENSION_EVALUATORS = new Map();
-function registerEvaluator(name, fn) { EXTENSION_EVALUATORS.set(name, fn); }
+  'host_html_path', 'dmarc_alignment', 'ms_compauth', 'ms_verdict', 'unicode_confusable',
+  'attachment_types', 'attachment_qr_bait', 'calendar_invite_lure', 'domain_age', 'urlhaus_host', 'spamhaus_dbl', 'first_contact_brand']);
 function normalizeSignalRules(value) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 200) fail('signalRules must be an array of at most 200 rules');
   return value.map((rule, i) => {
     if (!rule || typeof rule.id !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,119}$/i.test(rule.id) || !rule.indicators || typeof rule.indicators !== 'object') fail(`Invalid signalRules[${i}]`);
-    if (rule.evaluator !== undefined && !EVALUATORS.includes(rule.evaluator) && !EXTENSION_EVALUATORS.has(rule.evaluator)) fail(`Unknown evaluator ${rule.evaluator} in ${rule.id}`);
+    if (rule.evaluator !== undefined && !EVALUATORS.includes(rule.evaluator)) fail(`Unknown evaluator ${rule.evaluator} in ${rule.id}`);
     return { id: rule.id, category: rule.category || 'uncategorized', severity: rule.severity || 'low', weight: Number.isFinite(rule.weight) ? rule.weight : 1,
       evaluator: rule.evaluator || null, indicators: rule.indicators };
   });
@@ -268,12 +267,61 @@ function evaluateSignalRule(rule, ctx) {
       const strong = findings.filter(f => f.type !== 'punycode_domain');
       return strong.length ? { findings: findings.slice(0, 20) } : null;
     }
-    default: {
-      const ext = EXTENSION_EVALUATORS.get(rule.evaluator);
-      return ext ? ext(rule, ctx) : undefined; // undefined => not machine-evaluable
+    case 'attachment_types': {
+      const hits = matchingAttachments(ctx.attachments, ind);
+      return hits.length ? { attachments: hits } : null;
     }
+    case 'attachment_qr_bait': {
+      // QR codes are not decoded: flag image/PDF attachments with almost no text and no links.
+      const media = matchingAttachments(ctx.attachments, { extensions: ind.mediaExtensions, mimePrefixes: ind.mediaMimePrefixes });
+      const textLength = (ctx.text || '').replace(/\s+/g, ' ').trim().length;
+      return media.length && textLength <= (ind.maxTextLength ?? 200) && !(ctx.urlFindings || []).length ? { attachments: media, textLength } : null;
+    }
+    case 'calendar_invite_lure': {
+      const invites = matchingAttachments(ctx.attachments, ind);
+      if (!invites.length || !ctx.from) return null;
+      const fromOrg = ctx.orgDomain(ctx.from.hostname);
+      const foreign = (ctx.urlFindings || []).filter(f => f.status === 'parsed' && f.hostKind === 'domain').filter(f => { const o = ctx.orgDomain(f.hostname); return fromOrg && o && o !== fromOrg && !(ind.trustedLinkDomains || []).includes(o); });
+      return foreign.length ? { attachments: invites, foreignLinkHosts: [...new Set(foreign.map(f => f.hostname))].slice(0, 10) } : null;
+    }
+    case 'domain_age': {
+      const domains = enrichmentDomains(ctx), hits = [];
+      for (const d of domains) { const r = ctx.enrichment?.domains?.[d]?.registration; if (r?.status === 'known' && Number.isFinite(r.ageDays) && r.ageDays <= (ind.maxAgeDays ?? 30)) hits.push({ domain: d, ageDays: r.ageDays }); }
+      return hits.length ? { domains: hits } : null;
+    }
+    case 'urlhaus_host': {
+      const hits = Object.entries(ctx.enrichment?.hosts || {}).filter(([h, v]) => v?.urlhaus?.status === 'listed' && (ctx.urlFindings || []).some(f => f.hostname === h)).map(([h, v]) => ({ host: h, urlCount: v.urlhaus.urlCount ?? null }));
+      return hits.length ? { hosts: hits } : null;
+    }
+    case 'spamhaus_dbl': {
+      const hits = enrichmentDomains(ctx).filter(d => ctx.enrichment?.domains?.[d]?.dbl?.status === 'listed').map(d => ({ domain: d, codes: ctx.enrichment.domains[d].dbl.codes }));
+      return hits.length ? { domains: hits } : null;
+    }
+    case 'first_contact_brand': {
+      if (!ctx.from) return null;
+      const fromOrg = ctx.orgDomain(ctx.from.hostname) || ctx.from.hostname;
+      if (ctx.enrichment?.senders?.[fromOrg]?.firstContact !== true) return null;
+      const brands = (ind.brands || []).map(b => String(b).toLowerCase());
+      const tokens = skeleton(ctx.displayName || '').split(/[^a-z0-9]+/).filter(Boolean);
+      const labels = fromOrg.split('.');
+      const claimed = brands.filter(b => tokens.includes(b) && !labels.some(l => l.includes(b)));
+      return claimed.length ? { senderDomain: fromOrg, claimedBrands: claimed } : null;
+    }
+    default:
+      return undefined; // no evaluator: applied by the assistant during review
   }
+}
+function matchingAttachments(attachments, ind) {
+  const exts = (ind.extensions || []).map(e => String(e).toLowerCase()), prefixes = (ind.mimePrefixes || []).map(m => String(m).toLowerCase());
+  return (attachments || []).filter(a => { const name = a.filename.toLowerCase(); return exts.some(e => name.endsWith('.' + e)) || prefixes.some(p => a.mime.startsWith(p)); })
+    .map(a => ({ extension: (a.filename.match(/\.([a-z0-9]{1,10})$/i)?.[1] || '').toLowerCase(), mime: a.mime })).slice(0, 20);
+}
+function enrichmentDomains(ctx) {
+  const out = new Set();
+  if (ctx.from) out.add(ctx.orgDomain(ctx.from.hostname) || ctx.from.hostname);
+  for (const f of ctx.urlFindings || []) if (f.status === 'parsed' && f.hostKind === 'domain') out.add(ctx.orgDomain(f.hostname) || f.hostname);
+  return [...out];
 }
 
 module.exports = { normalizeHeaders, parseAuthResults, parseAuthResultsValue, dmarcAlignment, parseMsAntispam, unicodeFindings, idnFindings, skeleton, CONFUSABLES,
-  normalizeSenderRules, senderMatches, normalizeSignalRules, evaluateSignalRule, registerEvaluator, EVALUATORS, compilePattern };
+  normalizeSenderRules, senderMatches, normalizeSignalRules, evaluateSignalRule, EVALUATORS, compilePattern };
