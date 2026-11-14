@@ -1,0 +1,35 @@
+{
+  "id": "cs-abdmjhliniio",
+  "category": "ad",
+  "provider": "outlook",
+  "receivedDate": "2026-11-05",
+  "senderAddress": "hello@m.plex.tv",
+  "senderDisplayName": "Plex",
+  "subject": "Are you a Season Slayer or a Moviemaxxer?",
+  "lureSnippets": [
+    "Don’t Let Your 2026 Plex Playback Miss a Thing",
+    "Your 2026 Plex Playback is coming in December and it’s only as good as your watch history. Turn on Watch State and Ratings Sync now so every movie and show you watch and rate counts toward your year-end recap, across every device.",
+    "This account setting stores and syncs your watch and rating status for all movies and shows on Plex—without collecting or storing where items are played, or whether they were watched or manually marked watched.",
+    "What we don’t collect"
+  ],
+  "linkHostsAndPaths": [
+    "https://click.plex.tv/CI0/[TOKEN]",
+    "https://click.plex.tv/CL0/[TOKEN]/1/[TOKEN]",
+    "https://click.plex.tv/CL0/[TOKEN]/2/[TOKEN]",
+    "https://click.plex.tv/CL0/[TOKEN]/3/[TOKEN]",
+    "https://email-assets.plex.tv/download_the_app_ext.png",
+    "https://email-assets.plex.tv/facebook_ext.png",
+    "https://email-assets.plex.tv/instagram_ext.png",
+    "https://email-assets.plex.tv/my_account_ext.png",
+    "https://email-assets.plex.tv/paperboi/[TOKEN]",
+    "https://email-assets.plex.tv/support_ext.png",
+    "https://email-assets.plex.tv/tiktok_ext.png",
+    "https://email-assets.plex.tv/twitter_ext.png",
+    "https://email-assets.plex.tv/watchfree_ext.png",
+    "https://email-assets.plex.tv/youtube_ext.png",
+    "https://library.iterable.com/1981/8193/[TOKEN]"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [],
+  "notes": "104 invisible/zero-width characters in body (preheader padding), normalised; legitimate bulk sender; redirect/tracking paths collapsed to [TOKEN]; links were never opened or fetched"
+}

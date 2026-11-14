@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/miixmss/email-security-filter-rules/corpus/sample.schema.json",
+  "title": "Redacted phishing/spam corpus sample",
+  "description": "Short redacted lure excerpts and public indicators only. No full bodies, recipient headers, message IDs or personal data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "category", "provider", "receivedDate", "senderAddress", "senderDisplayName", "subject", "lureSnippets", "linkHostsAndPaths", "attachmentTypes", "matchedRuleIds", "notes"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^cs-[a-z]{12}$", "description": "Random identifier; not derived from any message ID." },
+    "category": { "type": "string", "enum": ["phishing", "spam", "ad"] },
+    "provider": { "type": "string", "enum": ["gmail", "outlook"] },
+    "receivedDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date only, no time." },
+    "senderAddress": { "type": "string", "minLength": 3, "maxLength": 320, "pattern": "^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$", "description": "The spammer's/advertiser's own sender address." },
+    "senderDisplayName": { "type": "string", "maxLength": 200 },
+    "subject": { "type": "string", "maxLength": 300 },
+    "lureSnippets": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 600 }, "description": "Short redacted excerpts, about 600 characters in total." },
+    "linkHostsAndPaths": { "type": "array", "items": { "type": "string", "maxLength": 300, "pattern": "^https?://[^?#\\s]+$" }, "description": "Scheme, host and path only; opaque tracking segments replaced by [TOKEN]." },
+    "attachmentTypes": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9.+-]{1,40}$" } },
+    "matchedRuleIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9._-]+$" }, "description": "Rule IDs the analyzer matched when the sample was added (offline, repository rules)." },
+    "notes": { "type": "string", "maxLength": 1000 },
+    "redactionApplied": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z_]+$" }, "description": "Redaction categories that fired (no values)." }
+  }
+}

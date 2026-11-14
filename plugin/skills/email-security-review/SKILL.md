@@ -5,7 +5,7 @@ description: Review Gmail and Outlook messages for phishing, suspicious spam, an
 
 # Email Security Review
 
-**Code version:** `0.5.0`  
+**Code version:** `0.6.0`  
 **Bundled filter revision:** `2026-11-14.7`  
 **Central rules:** `https://github.com/miixmss/email-security-filter-rules/blob/main/rules/filter-rules.json`
 

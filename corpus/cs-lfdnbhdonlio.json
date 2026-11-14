@@ -1,0 +1,35 @@
+{
+  "id": "cs-lfdnbhdonlio",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "jtmufvn.111.957097@ghohmznx.qonqatri.qiagleid.my.id",
+  "senderDisplayName": "Health Kit Distribution",
+  "subject": "[NAME],✅ Action Required: Claim your 100% FREE Medicare Kit before it expires",
+  "lureSnippets": [
+    "🚨 Limited Black Friday Supply: Claim your FREE Essential Medicare Kit before it's gone! Fast & Free Shipping",
+    "🔥 BLACK FRIDAY EXCLUSIVE: 100% FREE Medicare Kit",
+    "Don't Miss Out: Your",
+    "Free Medicare Kit is",
+    "Get everything you need to stay protected and prepared this season. This exclusive Black Friday offer includes fast, free shipping directly to your door.",
+    "Comprehensive Health Essentials included",
+    "🚚 Fast & Free Shipping to your",
+    "🔒 No Hidden Fees or future obligations.",
+    "CLAIM MY FREE KIT NOW ➔",
+    "⏳ Hurry! Limited quantities available. Offer expires soon."
+  ],
+  "linkHostsAndPaths": [
+    "https://i.imgur.com/VVZn9pY.jpeg",
+    "https://storage.googleapis.com/stayhere/forwared.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); 5 invisible/zero-width characters in body (preheader padding), normalised; rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path without the sq parameter; links were never opened or fetched",
+  "redactionApplied": [
+    "NAME"
+  ]
+}

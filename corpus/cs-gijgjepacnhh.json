@@ -1,0 +1,27 @@
+{
+  "id": "cs-gijgjepacnhh",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "sqlosgh.111.957097@domxakuw.msn.xalvexis.my.id",
+  "senderDisplayName": "CBS Health Wire",
+  "subject": "CBS News: The 30-second OTC lung reset reversing 50 years of smoking",
+  "lureSnippets": [
+    "CBS News: Dr. Gupta reveals the 30-second lung reset protocol that helped Clint Eastwood reverse severe COPD at 94...",
+    "CBS News Special: 94-Year-Old Clint Eastwood Reverses Severe COPD in Just 3",
+    "Weeks With a 30-Second Home Lung Reset",
+    "Every 65 seconds, another American is diagnosed with COPD or severe lung disease. Over 16 million people across the country are currently suffocating from breathlessness, with families torn apart and caregivers pushed to the",
+    "For decades, medical consensus insisted that lost lung capacity was an irreversible consequence of aging or smoking. But a groundbreaking CBS News"
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/stayhere/forwared.html",
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched"
+}

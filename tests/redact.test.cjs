@@ -1,0 +1,37 @@
+'use strict';
+// Redaction unit tests with synthetic identifiers only.
+const assert = require('node:assert/strict');
+const { redact, redactUrl } = require('../scripts/redact.cjs');
+const identifiers = { names: ['Alice', 'Example', 'alice.example'], emails: ['alice.example42@example.org', 'alice@example.net'] };
+const sender = 'abcdefg.111.957097@abcdefgh.word.sample.biz';
+const r = text => redact(text, { identifiers, senderAddress: sender });
+
+assert.equal(r('Hi Alice, welcome').text, 'Hi [NAME], welcome');
+assert.equal(r('Dear alice.example42,').text, 'Dear [NAME],');
+assert.equal(r('Hello Bob Smith, your account').text, 'Hello [NAME], your account');
+assert.equal(r('Email: alice.example42@example.org').text, 'Email: [EMAIL]');
+assert.equal(r('to someone@else.example').text, 'to [EMAIL]');
+assert.equal(r('from ' + sender).text, 'from ' + sender, 'spammer sender address is kept');
+assert.equal(r('call +31 6 12345678 or (555) 123-4567').text, 'call [PHONE] or [PHONE]');
+assert.equal(r('IBAN NL91ABNA0417164300').text, 'IBAN [IBAN]');
+assert.equal(r('card 4111 1111 1111 1111').text, 'card [CARD]');
+assert.equal(r('Account ID: 829539-AMZG').text, 'Account ID: [ID]');
+assert.equal(r('Customer ID: #alice.example42').text, 'Customer ID: [ID]');
+assert.equal(r('Warning ].77505467750546').text, 'Warning ].[ID]');
+assert.equal(r('marker 111.957097 sq=111-957097').text, 'marker 111.957097 sq=111-957097');
+assert.equal(r('Closed at 11-14-2026.').text, 'Closed at 11-14-2026.', 'plain dates are kept');
+assert.equal(r('server 192.0.2.10').text, 'server [IP]');
+assert.equal(r('Sat, 14 Nov 2026 17:53:38 +0000').text, 'Sat, 14 Nov 2026 [TIME]');
+assert.equal(r('Dorpsstraat 12, 1234 AB Utrecht').text, '[ADDRESS], [POSTCODE] Utrecht');
+assert.equal(r('1968 S Coast Highway #739, Laguna Beach, CA 92651').text, '[ADDRESS], Laguna Beach, [POSTCODE]');
+assert.equal(r('token XWXOSSGGXTXBKIHESZAGNF end').text, 'token [TOKEN] end');
+const zw = r('Pay\u200Bnow\u00AD\u034F');
+assert.equal(zw.text, 'Paynow');
+assert.equal(zw.invisibleRemoved, 3);
+assert.equal(zw.applied.INVISIBLE_CHARS_REMOVED, 3);
+assert.equal(r('see https://storage.googleapis.com/worklinks/proforward.html#abc?sq=111-957097&lk=1').text, 'see https://storage.googleapis.com/worklinks/proforward.html');
+assert.equal(redactUrl('https://click.example.com/CL0/https:%2F%2Fx.example%2F%3Femail=alice%2540example.net/1/0100abc-000000/Kp=452'), 'https://click.example.com/CL0/[TOKEN]/1/[TOKEN]');
+assert.equal(redactUrl('https://cdn.example.com/a1b2c3d4e5f6g7h8i9/img.png'), 'https://cdn.example.com/[TOKEN]/img.png');
+assert.equal(redactUrl('http://192.0.2.1/login'), 'http://[IP]/');
+assert.equal(redactUrl('javascript:alert(1)'), '[URL]');
+console.log('Redaction: names, greetings, emails, phones, IBAN/cards, IDs, digits, times, IPs, addresses, tokens, invisible chars and URLs passed.');

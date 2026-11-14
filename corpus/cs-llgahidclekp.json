@@ -1,0 +1,31 @@
+{
+  "id": "cs-llgahidclekp",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "gopgmui.111.957097@xsbojihv.inista.mahotanic.biz",
+  "senderDisplayName": "Prostate",
+  "subject": "Stop taking Flomax: 3 kitchen ingredients trigger a firehose stream",
+  "lureSnippets": [
+    "Top experts reveal the $3 tomato skin trick shrinking enlarged prostates and restoring strong flow...",
+    "SPECIAL EDITION • MEN'S HEALTH INTELLIGENCE BRIEF",
+    "Thursday, Sat, 14 Nov 2026 [TIME] • Urological Science Column",
+    "Top Experts Reveal the Shockingly Simple Fix That Ends Prostate Problems for",
+    "Good — The $3 Tomato Skin Trick",
+    "An investigative report on bladder urgency & prostate enlargement • Verified incredible discovery has revealed that prostate swelling, painful dribbling, and waking up 4 to 5 times a night to pee are not caused by aging, genetics, or changing hormone levels."
+  ],
+  "linkHostsAndPaths": [
+    "https://i.imgur.com/ZJlN1uV.png",
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); 9 invisible/zero-width characters in body (preheader padding), normalised; rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",
+  "redactionApplied": [
+    "TIME"
+  ]
+}

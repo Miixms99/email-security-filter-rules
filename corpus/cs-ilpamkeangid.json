@@ -1,0 +1,32 @@
+{
+  "id": "cs-ilpamkeangid",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "zhlkyal.111.957097@ltduxthd.uqsoa.laronor.me",
+  "senderDisplayName": "Payment_Declined©",
+  "subject": "🚨Your SiriusXM Account will Be Removed Today Please Renew Now!🚨",
+  "lureSnippets": [
+    "Payment attempt failure while renewing your subscription for Sirius your Sirius subscription has Exired Today !",
+    "Dear [NAME]",
+    "We Failed To Renew Your Sirius Membership .",
+    "INFORMATION about your account :",
+    "Sat, 14 Nov 2026 [TIME]",
+    "UPDATE MY PAYMENT DETAILS",
+    "Note: iN CASE OF IGNORANCE , Your Services will Be Completely Suspended within 24 Hours According To the Terms Defined in our Contracts"
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",
+  "redactionApplied": [
+    "EMAIL",
+    "NAME",
+    "TIME"
+  ]
+}

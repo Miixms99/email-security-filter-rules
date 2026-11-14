@@ -11,3 +11,6 @@ node_modules/
 contact-history.json
 enrichment-cache.json
 *.tmp
+
+# Local-only redaction identifiers (never commit)
+config/private-identifiers.json
