@@ -1,6 +1,9 @@
 'use strict';
 const {analyze}=require('./Controle-Email.cjs');
-const {digest}=require('./verify-evidence.cjs');
+const crypto=require('node:crypto');
+// Key-order independent JSON serialization, so a review binds to the exact rule content.
+function canonical(v){if(Array.isArray(v))return '['+v.map(canonical).join(',')+']';if(v&&typeof v==='object')return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';return JSON.stringify(v);}
+const digest=v=>crypto.createHash('sha256').update(canonical(v)).digest('hex');
 function verifyChatReview(rule,review){
  if(!review||review.mode!=='active_chat_review'||review.ruleDigest!==digest(rule)||review.privacyReviewed!==true||typeof review.rationale!=='string'||review.rationale.trim().length<20)throw Error('Active chat assessment required');
  if(!Array.isArray(review.cases)||review.cases.length<6||review.cases.length>100)throw Error('At least six test cases required');
@@ -17,5 +20,5 @@ function verifyChatReview(rule,review){
  if(positive<3||negative<3||groups.size<3||providers.size!==2)throw Error('Insufficient reviewed coverage');
  return {positive,negative,independence:'assessed_by_chat_not_independently_verified'};
 }
-module.exports={verifyChatReview};
+module.exports={verifyChatReview,canonical,digest};
 
