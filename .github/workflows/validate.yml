@@ -1,23 +1,22 @@
 name: Validate email security project
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-      - run: node --check scripts/Controle-Email.cjs
-      - run: node scripts/Controle-Email.cjs --self-test
-      - run: node scripts/Controle-Email.cjs --evaluate
-      - run: node tests/project.test.cjs
-      - run: node tests/publication.test.cjs
-      - run: node tests/sync-chain.test.cjs
-      - run: node tests/rule-learning.test.cjs
-
-
-
-      - run: node tests/evidence.test.cjs
+      - name: Syntax-check, validate rules, and run tests
+        run: node scripts/run-tests.cjs
