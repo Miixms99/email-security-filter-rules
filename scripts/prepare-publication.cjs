@@ -1,6 +1,8 @@
 'use strict';
 const {normalizeCampaignRules}=require('./Controle-Email.cjs');
 function prepare(document,submission){
+ throw Error('Automatic publication disabled: independently verifiable evidence and test attestations are not implemented');
+ /* Disabled until a trusted verifier exists.
  const {rule,review}=submission;
  if(!review||review.privacyReviewed!==true||review.independentEvidenceReviewed!==true||review.legitimateCounterexamplesReviewed!==true||review.ruleSpecificTestsPassed!==true)throw Error('Publication evidence incomplete');
  if(!rule||rule.privateDataExcluded!==true||rule.category!=='campaign_correlation'||rule.status!=='candidate')throw Error('Invalid candidate');
@@ -12,7 +14,7 @@ function prepare(document,submission){
  next.rules.push({id:rule.id,status:'signal_only',category:'campaign_correlation',indicators:{markers,exactPaths},requiredCombination:'Reviewed marker and exact path together.',verdictEffect:'Review signal only; no automatic mailbox actions.',privateDataExcluded:true});
  next.filterRevision=document.filterRevision+'.'+rule.id.replace(/[^a-z0-9]/gi,'').slice(-16);
  delete next.generatedAt;
- return next;
+ return next; */
 }
 module.exports={prepare};
 if(require.main===module){
