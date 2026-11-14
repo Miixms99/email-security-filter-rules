@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-14.2",
-  "generatedAt": "2026-11-14T12:30:00+01:00",
+  "filterRevision": "2026-11-14.4",
+  "generatedAt": "2026-11-14T18:50:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -19,13 +19,31 @@
     "requireRepeatedOrIndependentEvidence": true,
     "requireLegitimateCounterexampleReview": true,
     "requireRegressionTests": true,
-    "automaticMailboxActions": false
+    "automaticMailboxActions": false,
+    "authFailuresAloneDoNotBlock": true
+  },
+  "severityScale": {
+    "description": "Weights are review-priority hints only. No rule, including a high-weight combination, authorizes automatic classification, blocking, or mailbox actions.",
+    "low": {
+      "weight": 1,
+      "meaning": "Supporting signal; never sufficient alone to block or classify."
+    },
+    "medium": {
+      "weight": 2,
+      "meaning": "Review recommended when combined with at least one other independent signal."
+    },
+    "high": {
+      "weight": 4,
+      "meaning": "Strong review signal when its required combination is fully met; still not automatic proof or an auto-block."
+    }
   },
   "rules": [
     {
       "id": "campaign.marker-and-path.v1",
       "status": "signal_only",
       "category": "campaign_correlation",
+      "severity": "high",
+      "weight": 4,
       "indicators": {
         "markers": [
           "111.957097"
@@ -36,6 +54,9 @@
             "value": "111-957097"
           }
         ],
+        "hosts": [
+          "storage.googleapis.com"
+        ],
         "exactPaths": [
           "/worklinks/proforward.html",
           "/worklinks/evrtinggood.html",
@@ -45,7 +66,7 @@
           "/hmdbox/hmd-v1-cl3.html"
         ]
       },
-      "requiredCombination": "At least one configured marker or exact parameter and one configured exact path in the same message.",
+      "requiredCombination": "At least one configured marker or exact parameter and one configured exact path in the same message. A configured host is a supporting infrastructure signal only; it is never sufficient alone and must not be used as a broad shared-cloud-provider block.",
       "verdictEffect": "Send for review only; never classify or act from this rule alone.",
       "privateDataExcluded": true
     },
@@ -53,6 +74,8 @@
       "id": "campaign.fake-cloud-storage-deletion.v1",
       "status": "signal_only",
       "category": "social_engineering",
+      "severity": "high",
+      "weight": 4,
       "indicators": {
         "combinedClaims": [
           "account or subscription blocked or expired",
@@ -67,6 +90,322 @@
       },
       "requiredCombination": "Multiple combined claims plus at least one supporting sender or infrastructure mismatch.",
       "verdictEffect": "Send for review; generic storage or renewal words are insufficient.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "campaign.repeated-malicious-sender-domain.v1",
+      "status": "signal_only",
+      "category": "campaign_correlation",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "senderDomains": [
+          "cloudtivo2.biz",
+          "belilalune.web.id"
+        ]
+      },
+      "requiredCombination": "The exact sender registered domain matches a listed domain that had repeated campaign observations and no legitimate counterexample in reviewed mailboxes. Shared or public-infrastructure domains must never be listed here.",
+      "verdictEffect": "Send for review only; listing a domain is not an automatic mailbox block.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.spf-fail-or-softfail.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "authenticationResults": [
+          "spf=fail",
+          "spf=softfail"
+        ]
+      },
+      "requiredCombination": "Visible Authentication-Results or equivalent header reports SPF fail or softfail. A missing header is handled by a separate rule.",
+      "verdictEffect": "Supporting review signal only. An SPF failure alone must never block, classify, or be treated as proof of malice. Forwarding and mailing lists can produce SPF failures on legitimate mail.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.dkim-fail-or-none.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "authenticationResults": [
+          "dkim=fail",
+          "dkim=none"
+        ]
+      },
+      "requiredCombination": "Visible Authentication-Results or equivalent header reports DKIM fail or none.",
+      "verdictEffect": "Supporting review signal only. DKIM fail or none alone must never block or classify a message.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.dmarc-fail.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "authenticationResults": [
+          "dmarc=fail"
+        ]
+      },
+      "requiredCombination": "Visible Authentication-Results or equivalent header reports DMARC fail.",
+      "verdictEffect": "Supporting review signal only. A DMARC failure alone must never block or classify a message, though it may raise review priority when combined with independent identity or campaign signals.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.missing-or-inconsistent-headers.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "headerConditions": [
+          "Authentication-Results header missing when it is expected from the receiving path",
+          "ARC results missing, broken, or inconsistent with Authentication-Results",
+          "Conflicting authentication results across Authentication-Results and ARC sets"
+        ]
+      },
+      "requiredCombination": "Authentication-Results or ARC data are missing when expected, or visible results are internally inconsistent.",
+      "verdictEffect": "Supporting review signal only. Missing or inconsistent auth headers alone must never block or classify a message. Some connectors do not expose these headers.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "auth.return-path-from-mismatch.v1",
+      "status": "signal_only",
+      "category": "authentication",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "headerConditions": [
+          "Return-Path registrable domain differs from the From registrable domain"
+        ]
+      },
+      "requiredCombination": "The Return-Path or envelope-from registrable domain differs from the visible From registrable domain.",
+      "verdictEffect": "Supporting review signal only. Return-Path mismatch alone must never block or classify a message. Third-party senders and mailing lists commonly use a different Return-Path.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.lookalike-homoglyph-typosquat.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "combinedClaims": [
+          "sender or link domain is a lookalike, typo, or homoglyph of a well-known brand domain",
+          "the message claims that brand in the display name, logo, or visible text"
+        ],
+        "supportingSignals": [
+          "substituted or visually confusable characters in the domain or display text",
+          "added, dropped, or transposed characters relative to the genuine brand domain",
+          "unexpected country-code or extra public-suffix on a brand-like label"
+        ]
+      },
+      "requiredCombination": "A lookalike, typo, or homoglyph domain plus an explicit claim of the corresponding well-known brand. A merely unusual domain without a brand claim is insufficient.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.freemail-brand-display.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "combinedClaims": [
+          "display name or visible branding impersonates a well-known organization",
+          "exact sender domain is a consumer freemail or similar shared mailbox provider"
+        ]
+      },
+      "requiredCombination": "A well-known brand or official role is claimed in the display name or visible branding, and the exact sender domain is a shared freemail provider. Do not flag ordinary personal mail that does not claim an official brand role.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.subdomain-confusion.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "domainPatterns": [
+          "brand label appears to the left of a non-brand registrable domain, such as brand.com.evil.tld",
+          "brand label is joined with a security-looking token on an unrelated registrable domain, such as brand-login.tld"
+        ]
+      },
+      "requiredCombination": "The sender or link hostname places a well-known brand label in a non-authoritative position or as a hyphenated lookalike on an unrelated registrable domain, and the message claims that brand.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat ordinary brand subdomains on the genuine registrable domain as this pattern.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.reply-to-mismatch.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "headerConditions": [
+          "Reply-To registrable domain differs from the From registrable domain"
+        ]
+      },
+      "requiredCombination": "A Reply-To address is present and its registrable domain differs from the From registrable domain.",
+      "verdictEffect": "Supporting review signal only. A different Reply-To service alone must never block or classify a message, because legitimate outsourced or ticketing addresses are common.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.hidden-char-brand-spoof.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "combinedClaims": [
+          "display name impersonates a well-known brand",
+          "display name contains hidden or ignorable formatting characters",
+          "exact sender domain does not belong to the claimed brand"
+        ],
+        "supportingSignals": [
+          "unexpected attachments with generic business-document names and a non-document octet-stream type",
+          "urgency around account, phone, or payment-detail changes",
+          "homoglyph or lookalike characters in visible body text"
+        ]
+      },
+      "requiredCombination": "Brand impersonation in the display name plus hidden or ignorable characters plus a sender-domain mismatch. Attachments and urgency claims are supporting only.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.credential-phishing-lures.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "combinedClaims": [
+          "login, sign-in, or account verification lure",
+          "password reset, unlock, or credential-update lure"
+        ],
+        "supportingSignals": [
+          "brand or official-role claim mismatches the exact sender domain",
+          "destination link domain does not match the claimed brand",
+          "request to enter a password, one-time code, or recovery information off-session"
+        ]
+      },
+      "requiredCombination": "At least one credential or verification lure plus at least one supporting sender or destination mismatch. Generic security wording without a lure and mismatch is insufficient.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.urgency-threat-language.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "languagePatterns": [
+          "immediate action required or final warning",
+          "account will be closed, locked, or suspended unless the recipient acts now",
+          "data, photos, or funds will be deleted or lost unless the recipient acts now"
+        ]
+      },
+      "requiredCombination": "Urgency or threat language is present. This rule is supporting context only unless combined with an independent identity, authentication, campaign, or destination mismatch.",
+      "verdictEffect": "Supporting review signal only. Urgency wording alone must never block or classify a message, because legitimate notices can also be time-sensitive.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.payment-invoice-giftcard-lures.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "combinedClaims": [
+          "unexpected invoice, payment, refund, or unpaid-balance claim",
+          "gift-card, prize, pallet, or survey-for-reward claim"
+        ],
+        "supportingSignals": [
+          "brand or official-role claim mismatches the exact sender domain",
+          "payment or prize link domain does not match the claimed brand or payment processor in a consistent way",
+          "request to pay by gift card, cryptocurrency, or an unusual prepaid method"
+        ]
+      },
+      "requiredCombination": "A payment, invoice, refund, gift-card, or prize lure plus at least one supporting sender or destination mismatch. An ordinary expected receipt from a known processor is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "attachment.unexpected-html-zip-iso.v1",
+      "status": "signal_only",
+      "category": "attachment",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "attachmentTypes": [
+          "html or htm attachment",
+          "zip or similar archive attachment",
+          "iso or disk-image attachment",
+          "executable or macro-enabled document attachment"
+        ]
+      },
+      "requiredCombination": "An unexpected HTML, archive, disk-image, executable, or macro-enabled attachment is present. Treat the type as a supporting signal; raise review priority when combined with a lure, brand mismatch, or campaign indicator. Expected archives from a known correspondent remain counterexamples.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "link.visible-href-domain-mismatch.v1",
+      "status": "signal_only",
+      "category": "link",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "linkConditions": [
+          "visible link text or displayed URL uses a different registrable domain than the actual href"
+        ]
+      },
+      "requiredCombination": "A visible domain claim in link text or a displayed URL differs from the href registrable domain. Generic labels such as Click here make no domain claim and do not match this rule.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Some legitimate tracking links can also trigger this conservative signal.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "link.shortener-or-open-redirect.v1",
+      "status": "signal_only",
+      "category": "link",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "linkConditions": [
+          "URL uses a public shortener that hides the final destination",
+          "URL uses an open-redirect style path or parameter on an otherwise unrelated host"
+        ]
+      },
+      "requiredCombination": "A public shortener or an open-redirect style URL is present. This is a supporting signal only and is not sufficient alone, because shorteners are also used in legitimate mail.",
+      "verdictEffect": "Supporting review signal only. A shortener or redirect alone must never block or classify a message.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "link.storage-or-free-host-html.v1",
+      "status": "signal_only",
+      "category": "link",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "hosts": [
+          "storage.googleapis.com"
+        ],
+        "hostClasses": [
+          "shared object-storage or free web-hosting hostname",
+          "HTML page path hosted on shared storage or free hosting"
+        ],
+        "pathSuffixes": [
+          ".html",
+          ".htm"
+        ]
+      },
+      "requiredCombination": "A link points to an HTML page on shared object storage or free hosting. The shared host, including storage.googleapis.com, is never sufficient alone and must not be used as a broad provider block. Raise review priority only when combined with a configured campaign marker, exact path, brand mismatch, or credential or payment lure.",
+      "verdictEffect": "Supporting review signal only. A cloud or free-host HTML link alone must never block or classify a message.",
       "privateDataExcluded": true
     }
   ]
