@@ -5,7 +5,7 @@ const {canonical,digest,analyzerDigest,verifyEvidence}=require('../scripts/verif
 const {publicKey,privateKey}=crypto.generateKeyPairSync('ed25519');
 const rule={id:'synthetic.evidence.v1',status:'candidate',category:'campaign_correlation',privateDataExcluded:true,indicators:{markers:['synthetic-campaign'],exactPaths:['/synthetic/campaign']}};
 const cases=[true,true,true,false,false,false].map((expectedMatch,i)=>({provider:i%2?'Outlook':'Gmail',expectedMatch,sourceDigest:digest({fictionalSource:i}),independentGroup:'group-'+i,text:expectedMatch?'synthetic-campaign':'ordinary document',urls:['https://example.com/synthetic/campaign']}));
-function sign(cs=cases,changes={}){const manifest={schemaVersion:1,audience:'email-security-filter-rules',ruleDigest:digest(rule),analyzerDigest:analyzerDigest(),casesDigest:digest(cs),issuedAt:1000,expiresAt:10000,synthetic:true,...changes};return {manifest,cases:cs,signature:crypto.sign(null,Buffer.from(canonical(manifest)),privateKey).toString('base64')};}
+function sign(cs=cases,changes={}){const manifest={schemaVersion:1,audience:'email-security-filter-rules',ruleDigest:digest(rule),analyzerDigest:analyzerDigest(),casesDigest:digest(cs),issuedAt:1000,expiresAt:10000,synthetic:true,...changes};return {manifest,cases:structuredClone(cs),signature:crypto.sign(null,Buffer.from(canonical(manifest)),privateKey).toString('base64')};}
 const options={now:2000,allowSynthetic:true};let passed=0;
 assert.equal(verifyEvidence(rule,sign(),publicKey,options).verified,true);passed++;
 function rejects(fn){assert.throws(fn);passed++;}
