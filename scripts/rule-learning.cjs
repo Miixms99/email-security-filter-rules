@@ -26,9 +26,32 @@ function discover(observations){
   publicationEligible:false
  }));
 }
-function runtimeRules(document){
- if(document.schemaVersion!=='1.0.0'||document.privacy?.privateDataAllowed!==false||document.activationPolicy?.automaticMailboxActions!==false)throw Error('Unsafe rule document');
- return document.rules.filter(r=>['active','signal_only'].includes(r.status)&&r.category==='campaign_correlation').map(r=>({id:r.id,...r.indicators}));
+function assertRuntimeDocument(document){
+ if(document?.schemaVersion!=='1.0.0'||document.privacy?.privateDataAllowed!==false||document.activationPolicy?.automaticMailboxActions!==false||!Array.isArray(document.rules))throw Error('Unsafe rule document');
 }
-module.exports={discover,runtimeRules};
+const enabled=r=>['active','signal_only'].includes(r.status);
+// Routes a rule to the analyzer input that can evaluate it, by indicator shape:
+// campaign = marker/URL parameter plus exact path; sender = exact sender domains
+// or an anchored sender-address shape; everything else = generic signal rule.
+function classifyRule(r){
+ const i=r.indicators||{};
+ const has=k=>Array.isArray(i[k])&&i[k].length>0;
+ if(has('exactPaths')&&(has('markers')||has('urlParameters')))return 'campaign';
+ if(has('senderDomains')||(i.senderAddressRegex&&typeof i.senderAddressRegex==='object'))return 'sender';
+ return 'signal';
+}
+function runtimeRuleSet(document){
+ assertRuntimeDocument(document);
+ const set={campaignRules:[],senderRules:[],signalRules:[]};
+ for(const r of document.rules.filter(enabled)){
+  const kind=classifyRule(r),i=r.indicators||{};
+  if(kind==='campaign')set.campaignRules.push({id:r.id,markers:i.markers||[],urlParameters:i.urlParameters||[],exactPaths:i.exactPaths,...(i.hosts?{hosts:i.hosts}:{})});
+  else if(kind==='sender')set.senderRules.push({id:r.id,severity:r.severity,weight:r.weight,...(i.senderDomains?{senderDomains:i.senderDomains}:{}),...(i.senderAddressRegex?{senderAddressRegex:i.senderAddressRegex}:{})});
+  else set.signalRules.push({id:r.id,category:r.category,severity:r.severity,weight:r.weight,...(r.evaluator?{evaluator:r.evaluator}:{}),indicators:i});
+ }
+ return set;
+}
+// Backwards compatible: only the campaign rules the marker/path matcher accepts.
+function runtimeRules(document){return runtimeRuleSet(document).campaignRules;}
+module.exports={discover,runtimeRules,runtimeRuleSet,classifyRule};
 

@@ -7,7 +7,18 @@ const { createHash } = require('node:crypto');
 const { domainToASCII } = require('node:url');
 const { isIP } = require('node:net');
 const assert = require('node:assert/strict');
-const ROOT = process.env.EMAILCONTROL_CACHE_DIR || __dirname;
+const os = require('node:os');
+const signalsLib = require('./signals.cjs');
+// Public-source cache location. ESF_CACHE_DIR (or legacy EMAILCONTROL_CACHE_DIR)
+// overrides; otherwise Windows keeps the script folder (must be on D:) and other
+// platforms use $XDG_CACHE_HOME/email-security or ~/.cache/email-security.
+function defaultCacheDir(platform = process.platform, env = process.env, home = os.homedir()) {
+  if (platform === 'win32') return __dirname;
+  const xdg = env.XDG_CACHE_HOME && path.isAbsolute(env.XDG_CACHE_HOME) ? env.XDG_CACHE_HOME : path.join(home, '.cache');
+  return path.join(xdg, 'email-security');
+}
+const CACHE_OVERRIDE = process.env.ESF_CACHE_DIR || process.env.EMAILCONTROL_CACHE_DIR || '';
+const ROOT = CACHE_OVERRIDE || defaultCacheDir();
 const DATA_ROOT = process.env.EMAILCONTROL_DATA_DIR;
 const CACHE = path.join(ROOT, 'publieke-bronnen.json');
 const MAX_CACHE = 8 * 1024 * 1024;
@@ -49,7 +60,8 @@ function normalizeCampaignRules(value) {
     const urlParameters = rule.urlParameters ?? [];
     if (!Array.isArray(urlParameters) || urlParameters.length > 20 || urlParameters.some(x => !x || typeof x !== 'object' || Array.isArray(x) || typeof x.name !== 'string' || !/^[A-Za-z0-9._~-]{1,80}$/.test(x.name) || typeof x.value !== 'string' || !x.value || x.value.length > 500)) fail(`Invalid campaignRules[${index}].urlParameters`);
     if ((!markers.length && !urlParameters.length) || !exactPaths.length) fail(`Campaign rule ${id} requires an indicator and an exact path`);
-    return { id, markers, exactPaths: new Set(exactPaths), urlParameters: urlParameters.map(x => ({ name: x.name, value: x.value })) };
+    const hosts = strings('hosts', 50, x => /^[a-z0-9.-]{1,253}$/.test(x));
+    return { id, markers, exactPaths: new Set(exactPaths), urlParameters: urlParameters.map(x => ({ name: x.name, value: x.value })), hosts: new Set(hosts) };
   });
 }
 function campaignMatches(message, urlFindings, rules) {
@@ -60,17 +72,19 @@ function campaignMatches(message, urlFindings, rules) {
       const sourceFields = fields.filter(([, value]) => pattern.test(value)).map(([field]) => field);
       return sourceFields.length ? [{ marker, sourceFields }] : [];
     });
-    const parameters = [], paths = [];
+    const parameters = [], paths = [], hosts = [];
     for (const finding of urlFindings) if (finding.status === 'parsed') {
       const url = new URL(finding.originalUrl);
       if (rule.exactPaths.has(finding.pathname)) paths.push({ originalUrl: finding.originalUrl, pathname: finding.pathname });
+      if (rule.hosts.has(finding.hostname)) hosts.push(finding.hostname);
       for (const expected of rule.urlParameters) {
         const parts = [url.search.slice(1), url.hash.slice(1)];
         const rawParameter = new RegExp(`(?:^|[?&])${escapeRegExp(expected.name)}=${escapeRegExp(expected.value)}(?:&|$)`);
         if (parts.some(part => rawParameter.test(part))) parameters.push({ originalUrl: finding.originalUrl, ...expected });
       }
     }
-    return { ruleId: rule.id, matched: Boolean(paths.length && (markers.length || parameters.length)), markers, parameters, paths };
+    // Configured hosts are supporting infrastructure context only, never required or sufficient.
+    return { ruleId: rule.id, matched: Boolean(paths.length && (markers.length || parameters.length)), markers, parameters, paths, supportingHosts: [...new Set(hosts)] };
   }).filter(x => x.matched);
 }
 function bounded(value, limit, label, optional = false) {
@@ -176,16 +190,31 @@ function validateCache(value, now = Date.now(), indexes) {
   }
   return value;
 }
-function assertStorage(target) {
-  const full = path.resolve(target), root = path.resolve(ROOT);
-  if (process.platform !== 'win32' || !/^D:\\/i.test(root) || (full !== root && !full.startsWith(root + path.sep))) fail('Storage must remain in the fixed D: script folder');
+function assertStorage(target, root = ROOT, { platform = process.platform, explicit = Boolean(CACHE_OVERRIDE) } = {}) {
+  const pathApi = platform === 'win32' ? path.win32 : path;
+  if (!pathApi.isAbsolute(root)) fail('Cache directory must be an absolute path');
+  const full = pathApi.resolve(target), base = pathApi.resolve(root);
+  if (platform === 'win32' && !explicit && !/^D:\\/i.test(base)) fail('Storage must remain in the fixed D: script folder (or set ESF_CACHE_DIR)');
+  const rel = pathApi.relative(base, full);
+  if (rel.startsWith('..') || pathApi.isAbsolute(rel)) fail('Storage must remain inside the cache directory');
+  if (platform !== process.platform) return true;
+  // Refuse symbolic links or junctions between the cache root and the target.
   let cursor = full;
-  while (cursor) {
+  while (true) {
     try { if (fs.lstatSync(cursor).isSymbolicLink()) fail('Symbolic link or junction refused'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (cursor === base) break;
     const parent = path.dirname(cursor);
     if (parent === cursor) break;
     cursor = parent;
   }
+  // Realpath containment: the nearest existing ancestor must resolve inside the root.
+  if (fs.existsSync(base)) {
+    let existing = full;
+    while (!fs.existsSync(existing)) existing = path.dirname(existing);
+    const realBase = fs.realpathSync(base), realExisting = fs.realpathSync(existing), realRel = path.relative(realBase, realExisting);
+    if (realRel.startsWith('..') || path.isAbsolute(realRel)) fail('Resolved storage path escapes the cache directory');
+  }
+  return true;
 }
 function readCache() {
   try {
@@ -233,6 +262,8 @@ async function download(name, old) {
   } finally { clearTimeout(timeout); }
 }
 async function refresh() {
+  assertStorage(CACHE);
+  await fsp.mkdir(ROOT, { recursive: true, mode: 0o700 });
   assertStorage(CACHE);
   const lockPath = CACHE + '.lock', temp = CACHE + '.tmp';
   assertStorage(lockPath); assertStorage(temp);
@@ -339,12 +370,27 @@ function inputMessages(input) {
     for (const url of destinations) bounded(url, 16384, 'URL');
     const context = message.context;
     if (context !== undefined && (!context || typeof context !== 'object' || Array.isArray(context) || typeof context.securityReport !== 'boolean' || context.source !== 'user_confirmed')) fail('Context requires an explicit user-confirmed source');
+    // Transport headers: explicit `headers`, else those preserved by --extract.
+    const headers = signalsLib.normalizeHeaders(message.headers ?? message.extraction?.originalHeaders ?? message.extraction?.headers);
+    const attachments = message.attachments ?? (Array.isArray(message.extraction?.attachments) ? message.extraction.attachments : []);
+    if (!Array.isArray(attachments) || attachments.length > 200 || attachments.some(x => !x || typeof x !== 'object' || (x.filename !== undefined && typeof x.filename !== 'string') || (x.mime !== undefined && typeof x.mime !== 'string'))) fail('Invalid attachment metadata');
     return { mailbox, messageId, fromAddress, replyTo, displayName, text, linkPairs: pairs, cssExtraction,
-      confirmedReport: context?.securityReport === true, urls: [...new Set(destinations)] };
+      confirmedReport: context?.securityReport === true, urls: [...new Set(destinations)], headers,
+      attachments: attachments.map(x => ({ filename: String(x.filename || '').slice(0, 260), mime: String(x.mime || '').toLowerCase().slice(0, 200) })) };
   });
 }
+function bundledRuleSet() {
+  const { runtimeRuleSet } = require('./rule-learning.cjs');
+  return runtimeRuleSet(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'rules', 'filter-rules.json'), 'utf8')));
+}
 function analyze(input, loaded = readCache()) {
-  const messages = inputMessages(input), campaignRules = normalizeCampaignRules(input.campaignRules), sourceInfo = statuses(loaded);
+  if (input?.useBundledRules !== undefined && typeof input.useBundledRules !== 'boolean') fail('useBundledRules must be boolean');
+  const bundled = input?.useBundledRules ? bundledRuleSet() : {};
+  const messages = inputMessages(input), sourceInfo = statuses(loaded);
+  const campaignRules = normalizeCampaignRules(input.campaignRules ?? bundled.campaignRules);
+  const senderRules = signalsLib.normalizeSenderRules(input.senderRules ?? bundled.senderRules);
+  const signalRules = signalsLib.normalizeSignalRules(input.signalRules ?? bundled.signalRules);
+  const manualOnly = new Set();
   // Validated indexes and per-batch memoization never enter the public cache.
   const indexes = loaded.indexes || Object.fromEntries(Object.entries(loaded.cache.sources).map(([name, record]) => [name, parseSource(name, record.text)]));
   const psl = indexes.psl, feed = indexes.openphish?.entries;
@@ -402,17 +448,41 @@ function analyze(input, loaded = readCache()) {
     if (displayMailbox.status === 'case_only_localpart_difference') signal('display_mailbox_case_difference', { comparison: displayMailbox, contextRequired: true });
     if (displayComparison.status === 'different_registered_domain') signal('display_identity_difference', { comparison: displayComparison, explicitClaimOnly: true });
     if (displayComparison.status === 'different_hostname_boundary_unknown') { signal('display_boundary_unknown', { comparison: displayComparison }); uncertain.add('display_domain_boundary_unknown'); }
+    // Central sender rules (exact domains or anchored address shapes).
+    const configuredSenderMatches = signalsLib.senderMatches(from.status === 'parsed' ? from.normalizedAddress : '', senderRules);
+    for (const match of configuredSenderMatches) { observations.add('configured_sender_match'); signals.push({ source: 'central_sender_rule', ...match }); if (!message.confirmedReport) reviewRuleIds.add(match.ruleId); }
+    // Header-derived authentication and provider signals.
+    const auth = signalsLib.parseAuthResults(message.headers), ms = signalsLib.parseMsAntispam(message.headers);
+    const orgDomain = host => { const r = domain(host); return sourceInfo.psl.status === 'current' && r.status === 'known' ? r.value : null; };
+    const alignment = signalsLib.dmarcAlignment(auth, from.status === 'parsed' ? from.hostname : null, orgDomain);
+    const ctx = { auth, ms, alignment, from: from.status === 'parsed' ? from : null, replyComparison, linkComparisons, urlFindings, displayName: message.displayName, orgDomain, attachments: message.attachments, input };
+    const configuredSignalMatches = [];
+    let signalWeight = 0;
+    for (const rule of signalRules) {
+      const hit = rule.evaluator ? signalsLib.evaluateSignalRule(rule, ctx) : undefined;
+      if (hit === undefined) { manualOnly.add(rule.id); continue; }
+      if (!hit) continue;
+      configuredSignalMatches.push({ ruleId: rule.id, category: rule.category, severity: rule.severity, weight: rule.weight, details: hit });
+      observations.add('configured_signal_match');
+      signals.push({ ruleId: rule.id, source: 'central_signal_rule', severity: rule.severity, details: hit });
+      signalWeight += rule.weight;
+      if (rule.severity === 'high') reviewRuleIds.add(rule.id);
+    }
+    // Low/medium signals recommend review only in combination (weight >= 4).
+    if (signalWeight >= 4) for (const m of configuredSignalMatches) reviewRuleIds.add(m.ruleId);
     if (message.confirmedReport && configuredCampaignMatches.length) signal('campaign_in_confirmed_report', { source: 'user_confirmed', doesNotOverrideOtherSignals: true, configuredRuleIds: configuredCampaignMatches.map(x => x.ruleId) });
     const reviewRules = [...reviewRuleIds];
     for (const name of Object.keys(SOURCES)) if (sourceInfo[name].status !== 'current') uncertain.add(name + '_not_current');
     return { mailbox: message.mailbox, messageId: message.messageId, from, replyTo,
-      observations: [...observations], signals, configuredCampaignMatches, urlFindings, linkComparisons, cssExtraction: message.cssExtraction,
+      observations: [...observations], signals, configuredCampaignMatches, configuredSenderMatches, configuredSignalMatches, signalWeight,
+      authentication: { ...auth, dmarcAlignment: alignment }, providerVerdict: ms, urlFindings, linkComparisons, cssExtraction: message.cssExtraction,
       identityComparisons: { replyTo: replyComparison, displayName: displayComparison, displayMailbox },
       review: { status: reviewRules.length ? 'review_recommended' : uncertain.size ? 'uncertain' : 'no_additional_signal', ruleIds: reviewRules, uncertainties: [...uncertain], meaning: 'Review routing only; no safety or phishing verdict' }, classification: null,
-      coverage: { input: 'provided_structured_fields_only', mime: 'not_checked', authentication: 'not_checked', attachments: 'not_checked', qr: 'not_checked', scannerVerdicts: 'not_checked',
+      coverage: { input: 'provided_structured_fields_only', mime: 'not_checked', authentication: auth.status === 'parsed' ? 'headers_parsed_not_cryptographically_verified' : auth.status === 'not_provided' ? 'not_checked' : auth.status, attachments: 'not_checked', qr: 'not_checked', scannerVerdicts: 'not_checked',
         linkPairs: message.linkPairs.length ? 'provided_pairs_compared' : 'not_provided', senderIdentity: 'provided_explicit_domains_only' } };
   });
-  return { mode: 'observe_only', sources: sourceInfo, messages: analyzed, scanJobs: [...references].flatMap(([originalUrl, refs]) => ['Malwarebytes', 'Bitdefender'].map(engine => ({ engine, originalUrl, status: 'required_not_executed', references: refs }))), mailboxActions: [],
+  return { mode: 'observe_only', sources: sourceInfo, messages: analyzed,
+    centralRules: { campaign: campaignRules.length, sender: senderRules.length, signal: signalRules.length, manualReviewOnly: [...manualOnly].sort() }, scanJobs: [...references].flatMap(([originalUrl, refs]) => ['Malwarebytes', 'Bitdefender'].map(engine => ({ engine, originalUrl, status: 'required_not_executed', references: refs }))), mailboxActions: [],
     limitations: ['No URL was visited or scanned by this helper', 'A feed miss is not evidence of safety', 'No classification or automatic mailbox action', 'Original URL strings are preserved; source publication time is unknown'] };
 }
 function selfTest() {
@@ -423,7 +493,9 @@ function selfTest() {
   const record = (name, text) => ({ sourceUrl: SOURCES[name].url, text, sha256: hash(text), count: parseSource(name, text).count, retrievedAt: now, validatedAt: now, publishedAt: null, etag: null, lastModified: null });
   const loaded = { status: 'loaded', cache: { schemaVersion: 1, sources: { psl: record('psl', fixture), openphish: record('openphish', 'https://bad.example/a?q=1#x\n') } } };
   const message = { mailbox: 'Gmail', messageId: 'synthetic-1', text: '', urls: [] };
-  const campaignRules = [{ id: 'campaign.marker_and_path.v1', markers: ['111.957097'], urlParameters: [{ name: 'sq', value: '111-957097' }], exactPaths: ['/worklinks/proforward.html','/worklinks/evrtinggood.html','/managelink/newligne.html','/stayhere/forwared.html','/smalbus/salaminka.html','/hmdbox/hmd-v1-cl3.html'] }];
+  // Load the real central campaign rules so the self-test cannot drift from rules/filter-rules.json.
+  const campaignRules = bundledRuleSet().campaignRules;
+  assert.ok(campaignRules.some(r => r.id === 'campaign.marker-and-path.v1'), 'central campaign rule missing');
   const first = overrides => analyze({ ...message, ...overrides, campaignRules }, loaded).messages[0];
   test('CSS URLs preserve query and fragment and queue both engines',()=>{const u='https://images.example.com/a?q=1&x=2#part';const a=analyze({...message,cssTexts:['background:url("'+u+'")']},loaded);assert.deepEqual(a.messages[0].cssExtraction.urls,[u]);assert.equal(a.scanJobs.length,2);assert.ok(a.scanJobs.every(x=>x.originalUrl===u));});
   test('CSS quoted parentheses and unquoted URLs extracted',()=>assert.deepEqual(first({cssTexts:["a{background:url('https://example.com/a(b).png')} b{background:url(https://example.com/b)}"]}).cssExtraction.urls,['https://example.com/a(b).png','https://example.com/b']));
@@ -473,7 +545,7 @@ function selfTest() {
   test('invalid input URLs rejected', () => assert.throws(() => inputMessages({ ...message, urls: [5] })));
   test('no campaign marker false hit', () => assert.deepEqual(first({ text: '111.9570975' }).observations, []));
   test('exact marker alone remains supporting context', () => assert.equal(first({ text: 'code: 111.957097 ' }).configuredCampaignMatches.length, 0));
-  test('sender marker combines only with configured exact path', () => assert.ok(first({ fromAddress: 'tsgazyu.111.957097@example.com', urls: ['https://a.example/worklinks/proforward.html'] }).signals.some(x => x.ruleId === 'campaign.marker_and_path.v1' && x.source === 'chatgpt_supplied_campaign_rule')));
+  test('sender marker combines only with configured exact path', () => assert.ok(first({ fromAddress: 'tsgazyu.111.957097@example.com', urls: ['https://a.example/worklinks/proforward.html'] }).signals.some(x => x.ruleId === 'campaign.marker-and-path.v1' && x.source === 'chatgpt_supplied_campaign_rule')));
   test('campaign combination scoped to one message', () => { const a = analyze({ ...message, text: '111.957097', urls: ['https://a.example/worklinks/proforward.html'], campaignRules }, loaded); assert.ok(a.messages[0].observations.includes('configured_campaign_match')); });
   test('separate messages cannot form combination', () => { const a = analyze({ messages: [{ ...message, text: '111.957097' }, { ...message, messageId: 'synthetic-2', urls: ['https://a.example/worklinks/proforward.html'] }], campaignRules }, loaded); assert.ok(a.messages.every(x => !x.observations.includes('configured_campaign_match'))); });
   test('path boundary', () => assert.equal(first({ text: '111.957097', urls: ['https://a.example/worklinks/proforward.html.bak'] }).configuredCampaignMatches.length, 0));
@@ -823,14 +895,14 @@ async function workflowPlan(input) {
   if (input.providerFormat !== undefined && !['gmail_full','outlook_message','structured'].includes(input.providerFormat)) fail('Unsupported provider format');
   const messages = input.providerFormat === 'gmail_full' ? input.messages.map(m => extractMail(input.mailbox, m)) : input.providerFormat === 'outlook_message' ? input.messages.map(m => extractOutlook(input.mailbox, m, input.folderMap)) : input.messages;
   const extractedAt = performance.now();
-  const analysis = analyze({ messages, campaignRules: input.campaignRules });
+  const analysis = analyze({ messages, campaignRules: input.campaignRules, senderRules: input.senderRules, signalRules: input.signalRules, useBundledRules: input.useBundledRules });
   for (const m of messages) {
     const result = analysis.messages.find(r=>r.mailbox===m.mailbox&&r.messageId===m.messageId);
     if (m.extraction?.bodyAvailable===false) {
       result.review.uncertainties.push('provider_full_body_unavailable');
       if(result.review.status==='no_additional_signal')result.review.status='uncertain';
     }
-    if(m.provider==='Outlook')result.coverage.authentication=m.extraction.originalHeaders.length?'headers_available_not_cryptographically_verified':'not_available';
+    if(m.provider==='Outlook'&&!m.extraction.originalHeaders.length)result.coverage.authentication='not_available';
   }
   const analyzedAt = performance.now();
   const register = JSON.parse(await fsp.readFile(privateDataPath('email-register.json'), 'utf8'));
@@ -869,7 +941,7 @@ async function main() {
   const [command, ...extra] = process.argv.slice(2);
   if (extra.length) fail('Unexpected arguments');
   let result;
-  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--regression', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"}}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[]}]} or one message object', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
+  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--regression', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
   else if (command === '--self-test') result = selfTest();
   else if (command === '--evaluate') result = evaluate();
   else if (command === '--status') result = { mode: 'public_source_status', sources: statuses(readCache()) };
@@ -882,7 +954,7 @@ async function main() {
   else fail('Usage: node Controle-Email.cjs --help | --self-test | --evaluate | --regression | --status | --refresh | --analyze | --extract | --plan | --retry-plan. See --help for bounded JSON stdin formats.');
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }
-module.exports = { parseUrl, parsePsl, registeredDomain, parseOpenPhish, validateCache, validateRecord, sourceStatus, normalizeCampaignRules, campaignMatches, analyze, extractMail, extractOutlook, planScans, retryPlan, resumePlan, workflowPlan, regressionEvidence, selfTest, evaluate, SOURCES };
+module.exports = { defaultCacheDir, assertStorage, parseUrl, parsePsl, registeredDomain, parseOpenPhish, validateCache, validateRecord, sourceStatus, normalizeCampaignRules, campaignMatches, analyze, extractMail, extractOutlook, planScans, retryPlan, resumePlan, workflowPlan, regressionEvidence, selfTest, evaluate, SOURCES };
 if (require.main === module) main().catch(error => { process.stderr.write(JSON.stringify({ status: 'failed', reason: error.message }) + '\n'); process.exitCode = 1; });
 
 
