@@ -1,0 +1,23 @@
+{
+  "id": "cs-ajkpbmochcdd",
+  "category": "ad",
+  "provider": "outlook",
+  "receivedDate": "2026-11-07",
+  "senderAddress": "support@mail.better-robots.com",
+  "senderDisplayName": "Better Robots.txt",
+  "subject": "Text ready to paste, without stray spacing",
+  "lureSnippets": [
+    "Clean invisible characters from your text before publishing.",
+    "Your text, ready to paste",
+    "Copied text from an AI, a PDF or a document, only to find odd spacing or characters? InvisibleFix removes unwanted invisible characters and normalizes spacing for your chosen profile.",
+    "Paste your text, choose its destination, then copy the cleaned result. Your words stay yours: cleaning does not rewrite your content.",
+    "Try 5 free cleanups, with no account or payment card required. Processing happens in your browser; your text is not sent to the server."
+  ],
+  "linkHostsAndPaths": [
+    "https://links.mail.better-robots.com/CI0/[TOKEN]",
+    "https://links.mail.better-robots.com/CL0/[TOKEN]/1/[TOKEN]"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [],
+  "notes": "legitimate bulk sender; redirect/tracking paths collapsed to [TOKEN]; links were never opened or fetched"
+}

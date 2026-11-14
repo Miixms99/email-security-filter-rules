@@ -1,0 +1,31 @@
+{
+  "id": "cs-fbfaajiioblf",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "kzxlerx.111.957097@nkbccxlz.bele.mehidjugi.biz",
+  "senderDisplayName": "GmailSupportTeam",
+  "subject": "[NAME] Your Subscription will be Closed at-11-14-2026-[ Final Warning ].[ID]",
+  "lureSnippets": [
+    "GMAIL - Subscription Termination Notice",
+    "Your Subscription has Closed at 11-14-2026.",
+    "Dear [NAME],",
+    "We have tried to reach your account several times with notifications and alerts, but we did not receive a response from you.",
+    "Renew your subscription because you are now unprotected against cyber attacks and hackers For your security, we strongly recommend renewing your subscription.",
+    "If you have not renewed your membership within 48 hours, your account will be closed."
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",
+  "redactionApplied": [
+    "LONG_DIGITS",
+    "NAME"
+  ]
+}

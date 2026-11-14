@@ -1,0 +1,29 @@
+{
+  "id": "cs-ficcgfhfndhn",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "hnlpkou.111.957097@nzmxvagw.maineto.varavitelo.web.id",
+  "senderDisplayName": "Sirius Account",
+  "subject": "[NAME], Your Sirius membership has EXPIRED — Account deletion scheduled today",
+  "lureSnippets": [
+    "⚠️ URGENT: Your SiriusXM service is suspended. Update your payment details today to avoid permanent account removal and loss of promotional",
+    "⚠️ PAYMENT DECLINED // ACTION REQUIRED",
+    "Your SiriusXM Subscription Has Been Suspended",
+    "Dear [NAME],",
+    "We were unable to process your recent automatic renewal payment. Consequently, your",
+    "SiriusXM service has been temporarily suspended, and both satellite radio and app streaming access have",
+    "⏳ TODAY IS THE FINAL DEADLINE",
+    "If billing information is not updated by",
+    "11-14-2026 today, your account profile will be permanently purged from our network. This will"
+  ],
+  "linkHostsAndPaths": [
+    "https://websiteforpodio.com/[TOKEN]"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); 5 invisible/zero-width characters in body (preheader padding), normalised; rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; links on a non-storage host whose opaque path embeds the campaign marker digits split between random tokens (not covered by the exact-path rule); links were never opened or fetched",
+  "redactionApplied": [
+    "NAME"
+  ]
+}

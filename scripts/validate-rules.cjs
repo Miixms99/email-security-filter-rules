@@ -106,4 +106,4 @@ if (require.main === module) {
   console.log(`Validated ${result.rules} rules against filter-rules.schema.json (revision ${result.filterRevision}).`);
 }
 
-module.exports = { validateDocument, validateFiles, assertRuntimeLoadable };
+module.exports = { validateDocument, validateFiles, assertRuntimeLoadable, validateAgainstSchema };
