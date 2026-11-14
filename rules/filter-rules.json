@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0.0",
+  "filterRevision": "2026-11-14.2",
+  "generatedAt": "2026-11-14T12:30:00+01:00",
+  "privacy": {
+    "publicRepository": true,
+    "privateDataAllowed": false,
+    "excludedData": [
+      "email bodies",
+      "email addresses",
+      "message IDs",
+      "credentials",
+      "tokens",
+      "personal query values"
+    ]
+  },
+  "activationPolicy": {
+    "defaultStatus": "signal_only",
+    "requireRepeatedOrIndependentEvidence": true,
+    "requireLegitimateCounterexampleReview": true,
+    "requireRegressionTests": true,
+    "automaticMailboxActions": false
+  },
+  "rules": [
+    {
+      "id": "campaign.marker-and-path.v1",
+      "status": "signal_only",
+      "category": "campaign_correlation",
+      "indicators": {
+        "markers": [
+          "111.957097"
+        ],
+        "urlParameters": [
+          {
+            "name": "sq",
+            "value": "111-957097"
+          }
+        ],
+        "exactPaths": [
+          "/worklinks/proforward.html",
+          "/worklinks/evrtinggood.html",
+          "/managelink/newligne.html",
+          "/stayhere/forwared.html",
+          "/smalbus/salaminka.html",
+          "/hmdbox/hmd-v1-cl3.html"
+        ]
+      },
+      "requiredCombination": "At least one configured marker or exact parameter and one configured exact path in the same message.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "campaign.fake-cloud-storage-deletion.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "indicators": {
+        "combinedClaims": [
+          "account or subscription blocked or expired",
+          "threatened deletion of photos, videos, or cloud files",
+          "immediate renewal call to action"
+        ],
+        "supportingSignals": [
+          "brand claim mismatches the exact sender domain",
+          "rapidly rotating unrelated sender domains",
+          "repeated token structure across sender local parts"
+        ]
+      },
+      "requiredCombination": "Multiple combined claims plus at least one supporting sender or infrastructure mismatch.",
+      "verdictEffect": "Send for review; generic storage or renewal words are insufficient.",
+      "privateDataExcluded": true
+    }
+  ]
+}
