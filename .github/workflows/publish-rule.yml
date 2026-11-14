@@ -1,0 +1,38 @@
+name: Publish reviewed signal-only rule
+on:
+  workflow_dispatch:
+    inputs:
+      submission:
+        description: Reviewed public-safe candidate and evidence attestations
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: publish-reviewed-rule
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.actor == github.repository_owner && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/prepare-publication.cjs
+        env:
+          RULE_SUBMISSION: ${{ inputs.submission }}
+      - run: node scripts/Controle-Email.cjs --self-test
+      - run: node tests/project.test.cjs
+      - run: node tests/publication.test.cjs
+      - run: node tests/rule-learning.test.cjs
+      - run: node tests/sync-chain.test.cjs
+      - name: Commit validated rule
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add rules/filter-rules.json
+          git commit -m 'rules: publish reviewed signal-only candidate'
+          git push origin HEAD:main
+
