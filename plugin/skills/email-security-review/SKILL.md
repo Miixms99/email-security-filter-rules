@@ -5,7 +5,7 @@ description: Review Gmail and Outlook messages for phishing, suspicious spam, an
 
 # Email Security Review
 
-**Code version:** `0.3.1`  
+**Code version:** `0.3.2`  
 **Bundled filter revision:** `2026-11-14.2`  
 **Central rules:** `https://github.com/miixmss/email-security-filter-rules/blob/main/rules/filter-rules.json`
 
@@ -70,3 +70,19 @@ Run `prepare` and the complete repository tests on the exact change. The impleme
 If executable tools, source evidence, GitHub write access or tests are unavailable, keep the candidate pending and report the exact missing step. Never claim publication from a proposal or a local test. After merge, fetch the rules again and verify the rule ID and revision. Filter-only changes do not require a Library update; plugin instruction/code changes do.
 
 Publication workflow input is public infrastructure: never place private evidence or full mail content in workflow inputs or logs.
+
+## Mandatory spam-action checklist for Gmail and Outlook
+
+The owner has standing authorization to process reviewed clear phishing or suspicious spam in the Spam/Junk folder: preserve necessary evidence and recovery details, report appropriately, block the exact sender address, then move recoverably to Trash/Deleted Items. Include reporting and blocking in every action plan. This authorization does not cover uncertain messages, permanent deletion, domain blocks, or automatic provider filters.
+
+Before any action, retain the exact provider message ID, mailbox, original folder and exact sender address in the authorized private record. Never publish these values to GitHub. A folder count alone cannot identify affected messages.
+
+Track each message separately with these action states: `not_attempted`, `verified`, `failed`, or `unconfirmed` for reporting, exact-sender blocking, and recoverable movement. Record the actual tool/UI observation supporting each verified state. Report clear phishing as phishing and suspicious spam as spam. Already being in Spam/Junk is not evidence that this session reported it. Already being blocked counts only after the exact address is checked.
+
+Execute in order: evidence preservation → appropriate report → exact-address block → recoverable move. Reporting may itself move a message: verify that side effect separately, locate the same message by provider ID, and complete/verify blocking before calling the message complete. Stop further actions for that message after a failed or unconfirmed step. If reporting cannot be performed in its current folder, do not silently substitute moving it or restore it without authority; report the limitation.
+
+If the connected tools lack report or block support, check the available in-app browser capabilities. If neither can perform the action, explicitly mark that action unavailable/unconfirmed. Never claim success based on a proposal, generic provider behavior, a tool call attempt, or aggregate folder counts.
+
+Use `fully_handled` only when reporting, exact-address blocking and recoverable movement are all individually verified for the same message. Otherwise use `partially_handled` or `not_handled`. At batch level, report verified counts separately for each action and list failed/unconfirmed steps. Moving 46 messages proves only movement, not reporting or blocking.
+
+When repairing earlier incomplete work, select only the exact previously recorded message IDs. Never apply a repair action to all Deleted Items based solely on counts. Leave designated uncertain/retained messages untouched.
