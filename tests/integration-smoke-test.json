@@ -1,0 +1,8 @@
+{
+  "purpose": "Safe integration write/read test",
+  "status": "signal_only",
+  "automaticMailboxActions": false,
+  "containsPrivateMailData": false,
+  "scenario": "A generic cloud-storage deletion threat combined with an unrelated sender identity and urgent renewal request must be flagged for review, not acted on automatically.",
+  "expected": "review_only"
+}
