@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "email-security-review",
+  "name": "emailcontrole",
   "version": "0.3.0",
   "description": "Safely review Gmail and Outlook messages for phishing, suspicious spam, and legitimate mail.",
   "keywords": [
