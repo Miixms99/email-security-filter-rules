@@ -29,3 +29,7 @@ The current machine-readable rule set is stored in [rules/filter-rules.json](rul
 6. A faulty rule is disabled or reverted through a new commit, preserving history.
 
 Public contributions may propose improvements through issues or pull requests. Repository ownership remains the final authority for activation.
+
+## Testing
+
+GitHub Actions runs `node scripts/run-tests.cjs` on pull requests and on pushes to `main`. The same command can be run locally. Rule documents are checked against [rules/filter-rules.schema.json](rules/filter-rules.schema.json) without changing mailbox-action policy: rules remain review signals only.

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/miixmss/email-security-filter-rules/main/rules/filter-rules.schema.json",
+  "title": "Email security filter rules",
+  "description": "Public, signal-only detection rules. Additional properties are allowed so new indicator shapes can be added without a schema break. This schema does not authorize mailbox actions.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "filterRevision", "privacy", "activationPolicy", "rules"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "filterRevision": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "generatedAt": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["privateDataAllowed"],
+      "properties": {
+        "publicRepository": { "type": "boolean" },
+        "privateDataAllowed": { "const": false },
+        "excludedData": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+      }
+    },
+    "activationPolicy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["automaticMailboxActions"],
+      "properties": {
+        "defaultStatus": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "requireRepeatedOrIndependentEvidence": { "type": "boolean" },
+        "requireLegitimateCounterexampleReview": { "type": "boolean" },
+        "requireRegressionTests": { "type": "boolean" },
+        "automaticMailboxActions": { "const": false }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "status", "category", "indicators", "requiredCombination", "verdictEffect", "privateDataExcluded"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$", "maxLength": 120 },
+        "status": { "enum": ["candidate", "signal_only", "active", "disabled"] },
+        "category": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "maxLength": 80 },
+        "indicators": { "type": "object", "minProperties": 1, "additionalProperties": true },
+        "requiredCombination": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "verdictEffect": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "privateDataExcluded": { "const": true }
+      }
+    }
+  }
+}
