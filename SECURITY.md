@@ -1,6 +1,6 @@
 # Security and Privacy
 
-This repository is public. Do not submit private email content or account data.
+This repository is public. Do not submit private email content or account data. The only mail text allowed is the redacted corpus in `corpus/` (short excerpts of clear phishing/spam/ads, redacted with `scripts/redact.cjs` and checked by `tests/corpus-privacy.test.cjs`).
 
 ## Never include
 

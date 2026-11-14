@@ -1,0 +1,32 @@
+{
+  "id": "cs-eicechhjfhie",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "enfrnso.111.957097@fqgypkkp.kanilos.adventurebox.biz.id",
+  "senderDisplayName": "ED_Solution",
+  "subject": "Natural ED Solution You can Make Right in Your Kitchen!",
+  "lureSnippets": [
+    "MEN'S WELLNESS EDITION",
+    "THE HONEY WELLNESS GUIDE",
+    "Discover the ingredients behind the popular trend",
+    "🍯 The Secret Behind the Honey Mixture Everyone Is Talking About",
+    "Curious about traditional honey-based recipes and their connection to men's wellness?",
+    "🔥 Discover the Honey Trend",
+    "Explore the ingredients, preparation methods, and what scientific evidence actually says about popular men's wellness remedies.",
+    "No complicated routines.",
+    "No unnecessary gadgets.",
+    "Just a closer look at a popular homemade recipe."
+  ],
+  "linkHostsAndPaths": [
+    "https://i.imgur.com/CZ452VB.jpeg",
+    "https://storage.googleapis.com/managelink/newligne.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched"
+}

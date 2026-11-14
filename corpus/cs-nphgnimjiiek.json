@@ -1,0 +1,26 @@
+{
+  "id": "cs-nphgnimjiiek",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "mtkxuoz.111.957097@pnztrdyg.yluno.biztivo.biz",
+  "senderDisplayName": "BloodPril",
+  "subject": "Stop taking Lisinopril: The $1 ritual dissolving arterial cement",
+  "lureSnippets": [
+    "Dr. Oz on CBS: Natural compound clears clogged arteries fast",
+    "CBS News: Dr. Oz reveals the 4-second high blood pressure flush",
+    "Dr. Oz Reveals the \"Arterial Flush Ritual\" That's Reversing High Blood Pressure in Thousands Over 55 — Without Prescription Drugs",
+    "If you're tired of suffering from dizzy spells, chest tightness, and relying on harsh medications like Losartan, Amlodipine, or Lisinopril, cardiologists have just uncovered a game-changing breakthrough.",
+    "In a special broadcast on CBS News, Dr. Oz exposed the real root cause of hypertension in adults over 55: toxic \"Arterial Cement\" that"
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.rotating-marker-sender-pattern.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched"
+}

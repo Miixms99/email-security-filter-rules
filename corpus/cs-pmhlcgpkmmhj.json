@@ -1,0 +1,34 @@
+{
+  "id": "cs-pmhlcgpkmmhj",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "pteqohb.111.957097@srbkoagv.telegram.belilalune.web.id",
+  "senderDisplayName": "Sam's Club Membership",
+  "subject": "🚨 Action Required: Your Sam's Club Membership Has Expired",
+  "lureSnippets": [
+    "🚨 ACTION REQUIRED: MEMBERSHIP EXPIRED",
+    "Your Membership Has Expired",
+    "Dear [NAME],",
+    "Your Sam's Club membership has expired. As a result, you are no longer able to access member-only pricing, fuel discounts, or exclusive online deals.",
+    "Renew for $25 (50% OFF)",
+    "What you are missing right now:",
+    "Instant Savings: Exclusive member-only discounts on groceries & tech.",
+    "Fuel Savings: Up to 10¢ off per gallon at Sam's Club Gas.",
+    "Free Shipping: Free shipping on most online orders over $50.",
+    "Renew My Membership Now →"
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.marker-and-path.v1",
+    "campaign.repeated-malicious-sender-domain.v1",
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",
+  "redactionApplied": [
+    "NAME"
+  ]
+}

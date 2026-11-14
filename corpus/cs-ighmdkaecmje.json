@@ -1,0 +1,33 @@
+{
+  "id": "cs-ighmdkaecmje",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-13",
+  "senderAddress": "nooreply@nhovtbwymai.us",
+  "senderDisplayName": "Cloud.Notice.",
+  "subject": "[NAME], Your Account has been locked on 11-13-2026. Your photos and videos will be removed!",
+  "lureSnippets": [
+    "⚠️ FINAL NOTICE: ACCOUNT SUSPENSION IMMINENT",
+    "Your storage space is almost full",
+    "Hello [NAME],",
+    "Your Google account is using 96% of your storage. To avoid your account being locked and losing access to your files, you must free up space or upgrade to a higher plan.",
+    "🚨 URGENT: Without immediate action, all your files, photos, and videos will be permanently deleted.",
+    "Subscription ID: [ID]",
+    "Email: [EMAIL]",
+    "Expiration date: TODAY, 11-13-2026",
+    "Without the Cloud plan, you risk not being able to store all your data and files in the cloud services."
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/worklinks/proforward.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); Date header is not RFC 5322 (MM-DD-YYYY), likely forged; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",
+  "redactionApplied": [
+    "EMAIL",
+    "ID",
+    "NAME"
+  ]
+}

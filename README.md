@@ -2,7 +2,8 @@
 
 Signal-only phishing and spam detection rules plus a local, observe-only analyzer for
 a personal Gmail and Outlook setup. The repository is public: it holds abstracted
-signals only, never email content.
+signals and a small redacted corpus of clear phishing/spam excerpts (see [Corpus](#corpus)),
+never full emails or personal data.
 
 *Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes.*
 
@@ -20,6 +21,8 @@ signals only, never email content.
 | Validator | `scripts/validate-rules.cjs` | Schema, policy flags, unique IDs, private-data scan, severity/weight consistency, and a runtime-load check of every enabled rule. |
 | Publication gate | `scripts/prepare-publication.cjs`, `scripts/chat-review.cjs` | Reviewed candidate publication (see `PUBLICATION.md`). |
 | Plugin | `plugin/` | Assistant instructions (`email-security-review` skill) for the review workflow. |
+| Redaction | `scripts/redact.cjs` | Removes names, addresses, phone numbers, IBAN/card numbers, IDs, long digit runs, times, IPs, street addresses/postcodes, greetings with names, URL queries and tracking tokens, and invisible characters before text may enter the corpus. |
+| Corpus | `corpus/`, `scripts/corpus.cjs` | Redacted phishing/spam/ad samples (`corpus/sample.schema.json`), privacy scan and offline detection evaluation. |
 | Tests | `tests/`, `scripts/run-tests.cjs` | Offline, synthetic-only test suite run by CI. |
 
 ### Rule routing
@@ -127,6 +130,9 @@ Requires Node.js 20 or newer and no dependencies. Run from the repository root.
 | Enrichment (network) | `node scripts/enrich.cjs < input.json` | `Get-Content input.json \| node scripts\enrich.cjs` |
 | Extract a Gmail/Outlook message | `node scripts/Controle-Email.cjs --extract < message.json` | `Get-Content message.json \| node scripts\Controle-Email.cjs --extract` |
 | Input formats | `node scripts/Controle-Email.cjs --help` | `node scripts\Controle-Email.cjs --help` |
+| Add corpus samples | `node scripts/corpus.cjs --add < raw.json` | `Get-Content raw.json \| node scripts\corpus.cjs --add` |
+| Corpus privacy check | `node scripts/corpus.cjs --check` | `node scripts\corpus.cjs --check` |
+| Corpus detection report | `node scripts/corpus.cjs --evaluate` | `node scripts\corpus.cjs --evaluate` |
 
 Minimal analyzer input using the repository rules:
 
@@ -153,14 +159,29 @@ Storage paths are confined to their directory: no `..` traversal, no symbolic li
 
 - Signal-only: rules give review signals, never proof, verdicts or permission for mailbox actions (`automaticMailboxActions: false`).
 - Authentication failures alone never block; passes, feed misses and scanner "not detected" never prove safety.
-- Never commit email bodies, email addresses, message IDs, credentials, tokens, screenshots or complete private URLs. The validator scans the rule document for addresses, message IDs and secrets.
+- Never commit full email bodies, recipient addresses, message IDs, credentials, tokens, screenshots or complete private URLs. The validator scans the rule document for addresses, message IDs and secrets.
+- The only mail text in the repository is the redacted corpus: short excerpts of clear phishing, spam or ads, with no personal data (see [Corpus](#corpus)).
 - No external storage: rules live in this repository, and the cache and private state stay on the local machine.
 - The analyzer never opens links, attachments or unsubscribe URLs. See `SECURITY.md`.
+
+## Corpus
+
+**Purpose.** `corpus/` holds short, redacted excerpts of clear phishing, spam and unwanted ads seen in the maintained mailboxes. It shows how lures are phrased and built (brand spoofing, urgency, fake account details, hash-buster filler, invisible preheader padding, campaign link paths), and it is a regression set: `tests/corpus-detection.test.cjs` re-runs the analyzer on every sample and fails if a recorded rule match disappears. `node scripts/corpus.cjs --evaluate` prints the detection rate per category.
+
+**Sample format** (`corpus/sample.schema.json`, one JSON file per sample): random `id`, `category` (`phishing` / `spam` / `ad`), `provider` (`gmail` / `outlook`), `receivedDate` (date only), the spammer's or advertiser's own `senderAddress`, redacted `senderDisplayName` and `subject`, `lureSnippets` (redacted, about 600 characters in total), `linkHostsAndPaths` (scheme, host and path only), `attachmentTypes`, `matchedRuleIds` (offline analyzer result when added), `notes` and the names of the `redactionApplied` categories. Full bodies, headers with recipient data, message IDs and exact times are never stored.
+
+**Redaction** (`scripts/redact.cjs`) replaces, in this order: invisible/zero-width characters (removed and counted), URL queries, fragments and opaque tracking path segments (`[TOKEN]`), every email address except the sender's own (`[EMAIL]`, also percent-encoded forms), the owner's names and handles (`[NAME]`), greetings with a name (`Hi [NAME],`), exact times (`[TIME]`), IP addresses (`[IP]`), IBANs (`[IBAN]`), Luhn-valid card numbers (`[CARD]`), phone numbers (`[PHONE]`), street addresses and postcodes (`[ADDRESS]`, `[POSTCODE]`), labelled account/order/reference IDs, mixed alphanumeric IDs and digit runs of six or more (`[ID]`), and long random tokens (`[TOKEN]`). Campaign markers such as `111.957097` are public indicators and are kept.
+
+**Owner identifiers** live only in the local, gitignored `config/private-identifiers.json` (format: `config/private-identifiers.example.json`). Adding samples requires that file; it is never committed or included in exports.
+
+**How to add samples.** Read the message through the mailbox connector, select a few lure sentences in memory, and pipe a raw object (`category, provider, receivedDate, senderAddress, senderDisplayName, subject, lureSnippets[], links[], attachmentTypes[], notes`) into `node scripts/corpus.cjs --add`. The script redacts every field, evaluates the sample, runs the privacy scan and refuses to write a sample with findings. Then review each new file by hand, run `node scripts/run-tests.cjs`, and open a pull request. Only clearly malicious or unwanted mail is eligible; never personal or business correspondence. Links and attachments are never opened.
+
+**Privacy guarantees.** `tests/corpus-privacy.test.cjs` validates every sample against the schema and fails on any email address other than `senderAddress`, phone numbers, digit runs of six or more (other than the campaign marker), query strings or fragments, IP addresses, IBAN-like strings or message IDs. This generic check runs everywhere, including CI. When `config/private-identifiers.json` is present locally, the test also fails if any owner name or address appears anywhere in the corpus.
 
 ## Workflow
 
 1. **Daily check.** The assistant reviews Gmail Spam, Outlook Junk and recent inbox mail through the providers' web interfaces using the plugin instructions. Mailbox actions (report, block the exact sender, move to Trash) are taken there and verified one by one.
-2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump.
+2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump. Clear phishing/spam may also be added to `corpus/` as redacted samples.
 3. **Pull request.** The changes go on a branch with a pull request whose title states concretely what changed. Nothing is pushed directly to `main`. The only exception is the owner-triggered `publish-rule.yml` workflow, which commits one reviewed campaign candidate after the full test suite passes.
 4. **CI.** `.github/workflows/validate.yml` runs `node scripts/run-tests.cjs` on Node 20 and 22.
 5. **Merge.** The pull request is merged only after CI passes. Clients that fetch `main` see the new rules immediately.
