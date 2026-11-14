@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
 const {canonical,digest,analyzerDigest,verifyEvidence}=require('../scripts/verify-evidence.cjs');
 const {publicKey,privateKey}=crypto.generateKeyPairSync('ed25519');
-const rule={id:'synthetic.evidence.v1',indicators:{markers:['synthetic-campaign'],exactPaths:['/synthetic/campaign']}};
+const rule={id:'synthetic.evidence.v1',status:'candidate',category:'campaign_correlation',privateDataExcluded:true,indicators:{markers:['synthetic-campaign'],exactPaths:['/synthetic/campaign']}};
 const cases=[true,true,true,false,false,false].map((expectedMatch,i)=>({provider:i%2?'Outlook':'Gmail',expectedMatch,sourceDigest:digest({fictionalSource:i}),independentGroup:'group-'+i,text:expectedMatch?'synthetic-campaign':'ordinary document',urls:['https://example.com/synthetic/campaign']}));
 function sign(cs=cases,changes={}){const manifest={schemaVersion:1,audience:'email-security-filter-rules',ruleDigest:digest(rule),analyzerDigest:analyzerDigest(),casesDigest:digest(cs),issuedAt:1000,expiresAt:10000,synthetic:true,...changes};return {manifest,cases:cs,signature:crypto.sign(null,Buffer.from(canonical(manifest)),privateKey).toString('base64')};}
 const options={now:2000,allowSynthetic:true};let passed=0;
@@ -25,5 +25,11 @@ const bad=structuredClone(cases);bad[3].text='synthetic-campaign';
 rejects(()=>verifyEvidence(rule,sign(bad),publicKey,options));
 const other=crypto.generateKeyPairSync('ed25519');
 rejects(()=>verifyEvidence(rule,sign(),other.publicKey,options));
+const {prepare}=require('../scripts/prepare-publication.cjs');
+const document=require('../rules/filter-rules.json');
+const next=prepare(document,{rule,bundle:sign()},{publicKey,now:2000,allowSynthetic:true});
+assert.equal(next.rules.at(-1).status,'signal_only');passed++;
+rejects(()=>prepare(document,{rule,bundle:sign()},{publicKey,now:2000}));
+rejects(()=>prepare(document,{rule,review:{ruleSpecificTestsPassed:true}},{publicKey,now:2000}));
 console.log(JSON.stringify({passed,failed:0,syntheticOnly:true,privateKeyPersisted:false,productionAuthorized:false}));
 
