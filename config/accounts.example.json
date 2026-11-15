@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "accounts": [
+    {
+      "id": "personal-gmail",
+      "provider": "gmail",
+      "label": "Personal Gmail",
+      "enabled": true
+    },
+    {
+      "id": "personal-outlook",
+      "provider": "outlook",
+      "label": "Personal Outlook",
+      "enabled": true
+    },
+    {
+      "id": "extra-gmail",
+      "provider": "gmail",
+      "label": "Second Gmail mailbox (disabled example)",
+      "enabled": false
+    }
+  ]
+}
