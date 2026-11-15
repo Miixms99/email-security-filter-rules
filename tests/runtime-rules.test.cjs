@@ -48,4 +48,23 @@ assert.equal(child.status,0,child.stderr);
 const cli=JSON.parse(child.stdout).messages[0];
 assert.ok(cli.configuredCampaignMatches.length===1&&cli.configuredCampaignMatches[0].supportingHosts.includes('storage.googleapis.com'));
 assert.ok(cli.configuredSenderMatches.length===1);
-console.log('Real rule document: routing, runtime load, sender/auth/provider/Unicode rules and CLI --analyze passed.');
+// Casino campaign: Lucky Boom + outlet@ on a listed rotating domain, letter-for-digit
+// amounts in the subject, and gambling lures in the body.
+const casino=run({fromAddress:'outlet@buyharbor.me',displayName:'Lucky Boom',subject:'- UP TO €1,25O  +2OO FREE SPINS',text:'CLAIM BONUS\nDeposit just €20 and get €40 to play!\nWelcome Pack of up to €4,000 + 650 Free Spins\n100% First Deposit Bonus'});
+const casinoIds=casino.messages[0].configuredSignalMatches.map(m=>m.ruleId);
+for(const id of ['social.gambling-casino-lures.v1','obfuscation.letter-for-digit-amount.v1','campaign.lucky-boom-outlet-sender.v1'])assert.ok(casinoIds.includes(id),id);
+assert.ok(casino.messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.repeated-malicious-sender-domain.v1'&&m.domain==='buyharbor.me'));
+assert.equal(casino.messages[0].review.status,'review_recommended');
+// Same campaign on an as-yet unseen rotating domain still matches the sender pattern.
+const nextDomain=run({fromAddress:'outlet@newharbor.example',displayName:'Lucky Boom',subject:'+2OO FREE SPINS'});
+assert.ok(nextDomain.messages[0].configuredSignalMatches.some(m=>m.ruleId==='campaign.lucky-boom-outlet-sender.v1'));
+assert.equal(nextDomain.messages[0].configuredSenderMatches.length,0,'unlisted domain is not a domain block');
+// Legitimate invoice with real amounts, and outlet@ without the campaign display name.
+const invoice=run({fromAddress:'billing@shop.example',displayName:'Shop Billing',subject:'Invoice €1,250.00',text:'Thank you for your order. Total due: €1,250.00. Payment of $20.00 received. 200 items shipped.'});
+assert.equal(invoice.messages[0].configuredSignalMatches.some(m=>['social.gambling-casino-lures.v1','obfuscation.letter-for-digit-amount.v1','campaign.lucky-boom-outlet-sender.v1'].includes(m.ruleId)),false);
+assert.equal(invoice.messages[0].configuredSenderMatches.length,0);
+assert.equal(run({fromAddress:'outlet@unrelated-shop.example',displayName:'Shop Outlet',text:'Your order is ready.'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='campaign.lucky-boom-outlet-sender.v1'),false);
+// I/l stand-ins only count next to a currency marker; highway names are a counterexample.
+assert.ok(run({subject:'Refund of €l00 pending'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='obfuscation.letter-for-digit-amount.v1'));
+assert.equal(run({text:'Traffic update for highway I-95 and route I10'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='obfuscation.letter-for-digit-amount.v1'),false);
+console.log('Real rule document: routing, runtime load, sender/auth/provider/Unicode/casino rules and CLI --analyze passed.');

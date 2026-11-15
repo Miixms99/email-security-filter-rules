@@ -25,7 +25,7 @@ function evaluateSample(sample) {
   const { analyze } = require('./Controle-Email.cjs');
   const text = [sample.subject, ...sample.lureSnippets].join('\n');
   const result = analyze({ useBundledRules: true, messages: [{ mailbox: sample.provider === 'gmail' ? 'Gmail' : 'Outlook', messageId: sample.id,
-    fromAddress: sample.senderAddress, displayName: sample.senderDisplayName || undefined, text, urls: sample.linkHostsAndPaths,
+    fromAddress: sample.senderAddress, displayName: sample.senderDisplayName || undefined, subject: sample.subject, text, urls: sample.linkHostsAndPaths,
     attachments: sample.attachmentTypes.map(type => ({ filename: 'attachment.' + type, mime: '' })) }] }, OFFLINE).messages[0];
   const ids = [...result.configuredCampaignMatches, ...result.configuredSenderMatches, ...result.configuredSignalMatches].map(m => m.ruleId);
   return { matchedRuleIds: [...new Set(ids)].sort(), reviewStatus: result.review.status };
