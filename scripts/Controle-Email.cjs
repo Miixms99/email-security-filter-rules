@@ -458,7 +458,12 @@ function analyze(input, loaded = readCache()) {
     if (displayComparison.status === 'different_registered_domain') signal('display_identity_difference', { comparison: displayComparison, explicitClaimOnly: true });
     if (displayComparison.status === 'different_hostname_boundary_unknown') { signal('display_boundary_unknown', { comparison: displayComparison }); uncertain.add('display_domain_boundary_unknown'); }
     // Central sender rules (exact domains or anchored address shapes).
-    const configuredSenderMatches = signalsLib.senderMatches(from.status === 'parsed' ? from.normalizedAddress : '', senderRules);
+    // Valid DNS From addresses are normalized; obfuscated hosts (for example a
+    // hyphen-leading label that hostname() rejects) are still offered to sender
+    // shape rules when the raw value looks like local@host.
+    const senderAddress = from.status === 'parsed' ? from.normalizedAddress
+      : (typeof message.fromAddress === 'string' && /^[^\s<>@]+@[^\s<>@]+$/.test(message.fromAddress) ? message.fromAddress : '');
+    const configuredSenderMatches = signalsLib.senderMatches(senderAddress, senderRules);
     for (const match of configuredSenderMatches) { observations.add('configured_sender_match'); signals.push({ source: 'central_sender_rule', ...match }); if (!message.confirmedReport) reviewRuleIds.add(match.ruleId); }
     // Header-derived authentication and provider signals.
     const auth = signalsLib.parseAuthResults(message.headers), ms = signalsLib.parseMsAntispam(message.headers);
@@ -595,7 +600,8 @@ function selfTest() {
   test('query campaign variant with known path requires review',()=>assert.equal(first({urls:['https://example.com/worklinks/proforward.html?sq=111-957097']}).review.status,'review_recommended'));
   test('URL parameter alone remains supporting evidence',()=>assert.equal(first({urls:['https://example.com/normal?sq=111-957097']}).review.status,'no_additional_signal'));
   test('longer parameter value is not the campaign',()=>assert.equal(first({urls:['https://example.com/worklinks/proforward.html?sq=111-9570975']}).configuredCampaignMatches.length,0));
-  test('different parameter name is not the campaign',()=>assert.equal(first({urls:['https://example.com/worklinks/proforward.html?other_sq=111-957097']}).configuredCampaignMatches.length,0));
+  test('hyphen marker in a URL plus a configured path matches even if the parameter name is not sq',()=>assert.equal(first({urls:['https://example.com/worklinks/proforward.html?other_sq=111-957097']}).configuredCampaignMatches.length,1));
+  test('configured path without a campaign marker or sq parameter is not a campaign match',()=>assert.equal(first({urls:['https://example.com/worklinks/proforward.html?other=unrelated']}).configuredCampaignMatches.length,0));
   test('parameter and path in different messages cannot combine',()=>{const a=analyze({messages:[{...message,messageId:'parameter',urls:['https://example.com/normal?sq=111-957097']},{...message,messageId:'path',urls:['https://example.com/worklinks/proforward.html']}],campaignRules},loaded);assert.ok(a.messages.every(m=>!m.observations.includes('configured_campaign_match')));});
   test('confirmed report context explains new variant',()=>assert.equal(first({urls:['https://example.com/worklinks/proforward.html?sq=111-957097'],context:{securityReport:true,source:'user_confirmed'}}).review.status,'no_additional_signal'));
   test('synthetic evaluation reports false positives and abstentions',()=>{const e=evaluate();assert.equal(e.dataset.cases,20);assert.ok(e.proposed.counts.falsePositive>=1);assert.equal(e.proposed.counts.abstained,1);assert.equal(e.proposed.counts.unadjudicated,1);assert.equal(e.proposed.counts.uncertainOutputs,2);});
