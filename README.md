@@ -7,6 +7,12 @@ never full emails or personal data.
 
 *Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes.*
 
+## Questions, ideas and problems
+
+Anyone can [open an issue](https://github.com/miixms99/email-security-filter-rules/issues/new/choose) to report a bug, propose an idea or a new detection signal, or ask a question. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first: never paste real email content or personal data.
+
+Grok Bot reviews every issue and decides what to do: accept it, ask for more information, or close it with a reason.
+
 ## How it fits together
 
 | Part | Path | Role |
@@ -196,6 +202,8 @@ Storage paths are confined to their directory: no `..` traversal, no symbolic li
 5. **Merge.** The pull request is merged only after CI passes. Clients that fetch `main` see the new rules immediately.
 
 ## Contributing and the rule gate
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to open an issue or a pull request. In short:
 
 - New rules start as `signal_only` (or `candidate`) and need repeated or independent evidence, a review of legitimate counterexamples, and passing tests (`activationPolicy` in the rule file).
 - A machine-evaluated rule must name a built-in `evaluator` and come with synthetic positive and negative tests. The validator rejects rules the analyzer cannot load.

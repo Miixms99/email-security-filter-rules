@@ -1,0 +1,26 @@
+name: Question
+description: Ask a question about the project, the rules, or how to use them.
+title: "[Question] "
+labels: ["question", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask anything about this project. Please read [CONTRIBUTING.md](https://github.com/miixms99/email-security-filter-rules/blob/main/CONTRIBUTING.md) first.
+
+        Never paste real email content, personal addresses, names, headers with personal data, or tracking links. Use redacted or made-up examples only.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      description: Required. Issues that contain personal data may be edited or closed.
+      options:
+        - label: I confirm this issue contains no personal data, no real email content, no names or personal addresses, and no headers or tracking links with personal information. Any examples are redacted or synthetic.
+          required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Write your question in plain words. If you include an example, make it redacted or synthetic.
+    validations:
+      required: true
