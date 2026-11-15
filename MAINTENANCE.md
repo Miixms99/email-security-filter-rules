@@ -26,7 +26,16 @@ Run the full offline suite from the repository root:
 node scripts/run-tests.cjs
 ```
 
-This syntax-checks every `scripts/*.cjs` and `tests/*.cjs` file, validates `rules/filter-rules.json` against `rules/filter-rules.schema.json` (policy flags, unique rule IDs, a conservative private-data scan, severity/weight consistency, and a runtime-load check that routes every enabled rule through `runtimeRuleSet()` and the analyzer normalizers), then runs the synthetic analyzer self-test (which loads the real campaign rules), evaluation, and all test files. Shared synthetic fixtures live in `tests/helpers/` and are not run as tests.
+This syntax-checks every `scripts/*.cjs` and `tests/*.cjs` file, validates `rules/filter-rules.json` against `rules/filter-rules.schema.json` (policy flags, unique rule IDs, a conservative private-data scan, severity/weight consistency, and a runtime-load check that routes every enabled rule through `runtimeRuleSet()` and the analyzer normalizers), then runs the synthetic analyzer self-test (which loads the real campaign rules), evaluation, and all test files, and checks that the README project status block matches `stats/stats.json`. Shared synthetic fixtures live in `tests/helpers/` and are not run as tests.
+
+Public handling totals live in `stats/stats.json` (schema `stats/stats.schema.json`). After each mailbox check, record the run and refresh the README section:
+
+```bash
+node scripts/stats.cjs --record run.json
+node scripts/stats.cjs --render
+```
+
+Counts are aggregates only: never put addresses, subjects or personal data in `stats/stats.json` or the README block.
 
 ## Adding a machine-evaluated rule
 
