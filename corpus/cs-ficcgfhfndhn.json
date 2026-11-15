@@ -21,7 +21,9 @@
     "https://websiteforpodio.com/[TOKEN]"
   ],
   "attachmentTypes": [],
-  "matchedRuleIds": [],
+  "matchedRuleIds": [
+    "campaign.rotating-marker-sender-pattern.v1"
+  ],
   "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); 5 invisible/zero-width characters in body (preheader padding), normalised; rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; links on a non-storage host whose opaque path embeds the campaign marker digits split between random tokens (not covered by the exact-path rule); links were never opened or fetched",
   "redactionApplied": [
     "NAME"

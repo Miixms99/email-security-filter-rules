@@ -194,13 +194,16 @@ function senderMatches(address, rules) {
 const EVALUATORS = Object.freeze(['auth_result_tokens', 'auth_missing_or_inconsistent', 'return_path_mismatch', 'reply_to_mismatch', 'link_visible_mismatch',
   'host_html_path', 'dmarc_alignment', 'ms_compauth', 'ms_verdict', 'unicode_confusable',
   'attachment_types', 'attachment_qr_bait', 'calendar_invite_lure', 'domain_age', 'urlhaus_host', 'spamhaus_dbl', 'first_contact_brand',
-  'text_phrases', 'letter_for_digit_amount', 'display_name_and_local_part']);
+  'text_phrases', 'letter_for_digit_amount', 'display_name_and_local_part', 'impersonation_local_part_unrelated_domain']);
 function normalizeSignalRules(value) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 200) fail('signalRules must be an array of at most 200 rules');
   return value.map((rule, i) => {
     if (!rule || typeof rule.id !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,119}$/i.test(rule.id) || !rule.indicators || typeof rule.indicators !== 'object') fail(`Invalid signalRules[${i}]`);
     if (rule.evaluator !== undefined && !EVALUATORS.includes(rule.evaluator)) fail(`Unknown evaluator ${rule.evaluator} in ${rule.id}`);
+    if (rule.evaluator === 'impersonation_local_part_unrelated_domain' && rule.indicators.localPartRegex !== undefined) {
+      compilePattern(rule.indicators.localPartRegex, rule.id + ' localPartRegex');
+    }
     return { id: rule.id, category: rule.category || 'uncategorized', severity: rule.severity || 'low', weight: Number.isFinite(rule.weight) ? rule.weight : 1,
       evaluator: rule.evaluator || null, indicators: rule.indicators };
   });
@@ -330,6 +333,26 @@ function evaluateSignalRule(rule, ctx) {
       const nameHit = names.find(n => display === n);
       const localHit = locals.includes(local);
       return nameHit && localHit ? { displayName: nameHit, localPart: local } : null;
+    }
+    case 'impersonation_local_part_unrelated_domain': {
+      if (!ctx.from) return null;
+      const local = String(ctx.from.localPart || '').toLowerCase();
+      const host = String(ctx.from.hostname || '').toLowerCase().replace(/\.$/, '');
+      if (!local || !host) return null;
+      const exact = (ind.localParts || []).map(n => String(n).toLowerCase().trim()).filter(Boolean);
+      const prefixes = (ind.localPartPrefixes || []).map(n => String(n).toLowerCase().trim()).filter(p => p.length >= 8);
+      if (exact.length + prefixes.length > 80) return null;
+      let matched = exact.includes(local) ? local : (prefixes.find(p => local.startsWith(p)) || null);
+      if (!matched && ind.localPartRegex) {
+        const re = compilePattern(ind.localPartRegex, rule.id + ' localPartRegex');
+        if (re.test(local)) matched = local;
+      }
+      if (!matched) return null;
+      const genuine = (ind.genuineDomains || []).map(d => String(d).toLowerCase().trim()).filter(d => d.includes('.'));
+      if (!genuine.length || genuine.length > 80) return null;
+      const org = (typeof ctx.orgDomain === 'function' ? ctx.orgDomain(host) : null) || host;
+      const isGenuine = genuine.some(d => org === d || host === d || org.endsWith('.' + d) || host.endsWith('.' + d));
+      return isGenuine ? null : { localPart: local, senderDomain: org, matchedToken: matched };
     }
     default:
       return undefined; // no evaluator: applied by the assistant during review

@@ -12,7 +12,7 @@ never full emails or personal data.
 
 Updated automatically by Grok Bot after every daily spam check. Totals below are aggregate counts only (no addresses, subjects or personal data), since 14 November 2026. Mail-handling figures are lower bounds: only verified, classified mail is included.
 
-![Mails checked](https://img.shields.io/badge/Mails%20checked-29-0a66c2) ![Phishing caught](https://img.shields.io/badge/Phishing%20caught-7-c41e3a) ![Spam removed](https://img.shields.io/badge/Spam%20removed-22-d97706) ![Senders blocked](https://img.shields.io/badge/Senders%20blocked-19-4b5563) ![Domains blocked](https://img.shields.io/badge/Domains%20blocked-4-4b5563) ![Detection rules](https://img.shields.io/badge/Detection%20rules-36-0f766e)
+![Mails checked](https://img.shields.io/badge/Mails%20checked-29-0a66c2) ![Phishing caught](https://img.shields.io/badge/Phishing%20caught-7-c41e3a) ![Spam removed](https://img.shields.io/badge/Spam%20removed-22-d97706) ![Senders blocked](https://img.shields.io/badge/Senders%20blocked-19-4b5563) ![Domains blocked](https://img.shields.io/badge/Domains%20blocked-4-4b5563) ![Detection rules](https://img.shields.io/badge/Detection%20rules-41-0f766e)
 
 | | Count |
 | --- | ---: |
@@ -21,9 +21,9 @@ Updated automatically by Grok Bot after every daily spam check. Totals below are
 | Spam removed | 22 |
 | Senders blocked | 19 |
 | Domains blocked | 4 |
-| Detection rules | 36 |
+| Detection rules | 41 |
 | Corpus samples | 19 |
-| Rules revision | 2026-11-15.2 |
+| Rules revision | 2026-11-15.3 |
 | Last check | 15 November 2026, 13:02 Europe/Amsterdam |
 
 | Provider | Checked | Phishing | Spam | Senders blocked |
@@ -67,7 +67,7 @@ Grok Bot reviews every issue and decides what to do: accept it, ask for more inf
 
 Signal matches carry their severity weight (low 1, medium 2, high 4). A high-severity match, or a combined weight of at least 4, recommends review. No rule classifies a message or performs a mailbox action.
 
-## Rules (revision 2026-11-15.2)
+## Rules (revision 2026-11-15.3)
 
 | Rule | Category | Severity | Evaluated by |
 | --- | --- | --- | --- |
@@ -107,6 +107,11 @@ Signal matches carry their severity weight (low 1, medium 2, high 4). A high-sev
 | `social.gambling-casino-lures.v1` | social_engineering | medium | `text_phrases` |
 | `obfuscation.letter-for-digit-amount.v1` | obfuscation | medium | `letter_for_digit_amount` |
 | `campaign.lucky-boom-outlet-sender.v1` | campaign_correlation | high | `display_name_and_local_part` |
+| `obfuscation.hyphen-leading-domain-label.v1` | obfuscation | high | sender matcher |
+| `obfuscation.random-alnum-sender-shape.v1` | obfuscation | medium | sender matcher |
+| `identity.retailer-brand-local-part.v1` | identity | high | `impersonation_local_part_unrelated_domain` |
+| `social.spinkong-vip-sender.v1` | social_engineering | high | sender matcher |
+| `identity.cjib-impersonation-unrelated-domain.v1` | identity | high | `impersonation_local_part_unrelated_domain` |
 
 A test (`tests/project.test.cjs`) fails if a rule exists in the JSON but is missing from this table.
 
@@ -132,7 +137,13 @@ These are judged from filename extension and MIME type only. Attachments are nev
 
 - **Gambling or casino lures**: promotional phrases such as "free spins", "first deposit bonus", "rakeback" or "welcome pack of". Ordinary invoices and retail cashback without these phrases are counterexamples.
 - **Letter-for-digit amounts**: a lookalike letter used as a digit in a money amount or number token, often only in the subject (`€1,25O`, `2OO`). Highway names such as I-95 are not flagged; I or l count only next to a currency marker.
-- **Lucky Boom / `outlet@`**: the display name "Lucky Boom" with local-part `outlet` on rotating domains (observed: `ravenstone.pro`, `buyharbor.me`). Those domains are also listed on `campaign.repeated-malicious-sender-domain.v1`.
+- **Lucky Boom / `outlet@` or `appliancebillow@`**: the display name "Lucky Boom" with local-part `outlet` or `appliancebillow` on rotating domains (observed examples include `ravenstone.pro`, `buyharbor.me`, `campaignharbor.info`, `northforge.rent` and other listed single-purpose domains). Those domains are also listed on `campaign.repeated-malicious-sender-domain.v1`.
+- **Rotating campaign marker `111.957097` / `111-957097`**: seven-letter local-part plus the marker, at an eight-letter label plus a word label under `.biz`, `.biz.id`, `.my.id`, `.web.id` or `.us`.
+- **Hyphen-leading domain labels**: a sender domain label that starts with one or more hyphens (invalid as an ordinary DNS label), including hyphen-padded mail labels and long random labels.
+- **Random alphanumeric sender shape**: an eight-character alphanumeric local-part at a 28-to-32-character alphanumeric `.com` domain.
+- **Retailer brand as local-part**: local-parts such as `walmart`, `bestbuy`, `samsclub` or `costco` on a domain that is not the brand's genuine domain. A genuine newsletter at the brand domain is a counterexample.
+- **SpinKong VIP sender**: local-part in the `spinkong-vip-` shape at a hyphen-leading bonuses or vip domain.
+- **CJIB impersonation**: a `cjib-nietantwoorden-referentie-` local-part on a domain that is not `cjib.nl`. Mail from `cjib.nl` itself is a counterexample.
 
 ### Enrichment (optional, network)
 

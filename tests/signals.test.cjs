@@ -55,4 +55,15 @@ assert.ok(S.evaluateSignalRule(phraseRule,{text:'Join now for 100% First Deposit
 assert.equal(S.evaluateSignalRule(phraseRule,{text:'Your cashback has been credited'}),null);
 assert.ok(S.evaluateSignalRule(nameRule,{from:{localPart:'outlet',hostname:'buyharbor.me'},displayName:'Lucky Boom'}));
 assert.equal(S.evaluateSignalRule(nameRule,{from:{localPart:'outlet',hostname:'shop.example'},displayName:'Shop Outlet'}),null);
+const retailerRule={id:'r.v1',evaluator:'impersonation_local_part_unrelated_domain',indicators:{localParts:['walmart','bestbuy'],genuineDomains:['walmart.com','bestbuy.com']}};
+assert.ok(S.evaluateSignalRule(retailerRule,{from:{localPart:'walmart',hostname:'thecuntionter.com'}}));
+assert.equal(S.evaluateSignalRule(retailerRule,{from:{localPart:'newsletter',hostname:'walmart.com'}}),null);
+assert.equal(S.evaluateSignalRule(retailerRule,{from:{localPart:'walmart',hostname:'mail.walmart.com'}}),null);
+const cjibRule={id:'c.v1',evaluator:'impersonation_local_part_unrelated_domain',indicators:{localPartPrefixes:['cjib-nietantwoorden-referentie-'],genuineDomains:['cjib.nl']}};
+assert.ok(S.evaluateSignalRule(cjibRule,{from:{localPart:'Cjib-nietantwoorden-referentie-abcdef012345',hostname:'casi-app.com'}}));
+assert.equal(S.evaluateSignalRule(cjibRule,{from:{localPart:'cjib-nietantwoorden-referentie-abcdef012345',hostname:'mail.cjib.nl'}}),null);
+const hyphenRules=S.normalizeSenderRules([{id:'h.v1',senderAddressRegex:{localPart:'^[a-z0-9.+-]{1,64}$',domain:'^-+[a-z0-9.-]*\\.[a-z]{2,24}$'}},{id:'a.v1',senderAddressRegex:{localPart:'^[a-z0-9]{8}$',domain:'^[a-z0-9]{28,32}\\.com$'}}]);
+assert.equal(S.senderMatches('info@-----mail.samplehost.com',hyphenRules)[0].ruleId,'h.v1');
+assert.equal(S.senderMatches('ab12cd34@abcdefghijklmnopqrstuvwxyz12.com',hyphenRules)[0].ruleId,'a.v1');
+assert.equal(S.senderMatches('info@mail.samplehost.com',hyphenRules).length,0);
 console.log('Header parsing (Gmail, Microsoft, ARC, forged lower header), alignment, MS verdicts, Unicode, sender-rule safety and new signal evaluators passed.');

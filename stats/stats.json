@@ -41,8 +41,8 @@
     }
   },
   "derived": {
-    "activeRuleCount": 36,
-    "filterRevision": "2026-11-15.2",
+    "activeRuleCount": 41,
+    "filterRevision": "2026-11-15.3",
     "corpusSamples": {
       "phishing": 7,
       "spam": 10,
