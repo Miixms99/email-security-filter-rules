@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a problem. Please read [CONTRIBUTING.md](https://github.com/miixms99/email-security-filter-rules/blob/main/CONTRIBUTING.md) first.
+        Thanks for reporting a problem. Please read [CONTRIBUTING.md](https://github.com/miixms99/mailshield/blob/main/CONTRIBUTING.md) first.
 
         Never paste real email content, personal addresses, names, headers with personal data, or tracking links. Use redacted or made-up examples only.
   - type: checkboxes

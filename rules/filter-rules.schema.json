@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/miixms99/email-security-filter-rules/main/rules/filter-rules.schema.json",
-  "title": "Email security filter rules",
+  "$id": "https://raw.githubusercontent.com/miixms99/mailshield/main/rules/filter-rules.schema.json",
+  "title": "MailShield filter rules",
   "description": "Public, signal-only detection rules. Additional properties are allowed so new indicator shapes can be added without a schema break. This schema does not authorize mailbox actions.",
   "type": "object",
   "additionalProperties": true,

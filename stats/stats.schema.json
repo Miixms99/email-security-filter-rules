@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/miixms99/email-security-filter-rules/stats/stats.schema.json",
+  "$id": "https://github.com/miixms99/mailshield/stats/stats.schema.json",
   "title": "Public aggregate email-security handling stats",
   "description": "Repository-level totals only. No sender or recipient addresses, subjects, message IDs or other personal data.",
   "type": "object",

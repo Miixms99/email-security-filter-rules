@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Contributing guide
-    url: https://github.com/miixms99/email-security-filter-rules/blob/main/CONTRIBUTING.md
+    url: https://github.com/miixms99/mailshield/blob/main/CONTRIBUTING.md
     about: How to report a problem, propose an idea, or ask a question, and what not to paste in an issue.
