@@ -1,0 +1,21 @@
+{
+  "id": "cs-hdiejmkdjiaa",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-15",
+  "senderAddress": "ofubztd@iusivkzr.adobe.salilen.me",
+  "senderDisplayName": "HoneyBoost",
+  "subject": "Watch before deleted: The simple shower trick that ended ED for men over 60",
+  "lureSnippets": [
+    "Watch before deleted: The simple shower trick that ended ED for men over 60",
+    "As seen on CBS News & Men's Health"
+  ],
+  "linkHostsAndPaths": [],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "identity.brand-label-in-unrelated-domain.v1",
+    "social.fake-media-endorsement.v1",
+    "social.watch-before-deleted.v1"
+  ],
+  "notes": "campaign marker 111-957097; sender uses a well-known brand as a subdomain label of an unrelated domain; links on storage.googleapis.com (exact path not recorded); links were never opened or fetched"
+}

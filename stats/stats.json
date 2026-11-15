@@ -1,31 +1,31 @@
 {
   "schemaVersion": 1,
   "trackingSince": "2026-11-14",
-  "lastCheck": "2026-11-15T13:02:06+01:00",
+  "lastCheck": "2026-11-15T18:20:26+01:00",
   "totals": {
-    "mailsChecked": 29,
-    "phishing": 7,
-    "spam": 22,
+    "mailsChecked": 32,
+    "phishing": 8,
+    "spam": 24,
     "uncertain": 0,
     "legitimate": 0,
-    "sendersBlocked": 19,
+    "sendersBlocked": 22,
     "domainsBlocked": 4,
-    "reportedToProvider": 7,
-    "movedToTrash": 28,
-    "spamChecksRun": 3
+    "reportedToProvider": 8,
+    "movedToTrash": 31,
+    "spamChecksRun": 4
   },
   "providers": {
     "gmail": {
-      "mailsChecked": 15,
-      "phishing": 7,
-      "spam": 8,
+      "mailsChecked": 18,
+      "phishing": 8,
+      "spam": 10,
       "uncertain": 0,
       "legitimate": 0,
-      "sendersBlocked": 15,
+      "sendersBlocked": 18,
       "domainsBlocked": 2,
-      "reportedToProvider": 7,
-      "movedToTrash": 15,
-      "spamChecksRun": 2
+      "reportedToProvider": 8,
+      "movedToTrash": 18,
+      "spamChecksRun": 3
     },
     "outlook": {
       "mailsChecked": 14,
@@ -41,13 +41,13 @@
     }
   },
   "derived": {
-    "activeRuleCount": 41,
-    "filterRevision": "2026-11-15.3",
+    "activeRuleCount": 46,
+    "filterRevision": "2026-11-15.4",
     "corpusSamples": {
-      "phishing": 7,
-      "spam": 10,
+      "phishing": 8,
+      "spam": 12,
       "ad": 2,
-      "total": 19
+      "total": 22
     },
     "mergedRulePrCount": 5
   },

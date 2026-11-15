@@ -66,4 +66,36 @@ const hyphenRules=S.normalizeSenderRules([{id:'h.v1',senderAddressRegex:{localPa
 assert.equal(S.senderMatches('info@-----mail.samplehost.com',hyphenRules)[0].ruleId,'h.v1');
 assert.equal(S.senderMatches('ab12cd34@abcdefghijklmnopqrstuvwxyz12.com',hyphenRules)[0].ruleId,'a.v1');
 assert.equal(S.senderMatches('info@mail.samplehost.com',hyphenRules).length,0);
+// variantSenderAddressRegex is a second evaluated sender shape on the same rule.
+const variantRules=S.normalizeSenderRules([{id:'v.v1',senderAddressRegex:{localPart:'^[a-z]{7}\\.111[.-]957097$',domain:'^[a-z]{8}\\.[a-z]{2,24}\\.sample\\.biz$'},variantSenderAddressRegex:{localPart:'^nooreply$',domain:'^[a-z]{9,11}\\.us$'}}]);
+assert.equal(S.senderMatches('abcdefg.111.957097@abcdefgh.word.sample.biz',variantRules)[0].ruleId,'v.v1');
+assert.equal(S.senderMatches('nooreply@icoutxooeem.us',variantRules)[0].ruleId,'v.v1');
+assert.equal(S.senderMatches('noreply@icoutxooeem.us',variantRules).length,0,'correctly spelled no-reply is not the variant');
+assert.equal(S.senderMatches('nooreply@short.us',variantRules).length,0,'domain shorter than 9 letters is not the variant');
+
+const brands=[{token:'adobe',genuineDomains:['adobe.com','adobelogin.com']},{token:'google',genuineDomains:['google.com','gmail.com','googleapis.com']},{token:'apple',genuineDomains:['apple.com']},{token:'microsoft',genuineDomains:['microsoft.com','office.com','outlook.com']}];
+const brandRule={id:'b.v1',evaluator:'brand_label_in_unrelated_host',indicators:{brands,fields:['sender','links']}};
+assert.ok(S.evaluateSignalRule(brandRule,{from:{localPart:'ofubztd',hostname:'iusivkzr.adobe.salilen.me'}}),'adobe label on an unrelated .me domain');
+assert.equal(S.evaluateSignalRule(brandRule,{from:{localPart:'mail',hostname:'mail.adobe.com'}}),null,'genuine adobe subdomain is a counterexample');
+assert.equal(S.evaluateSignalRule(brandRule,{from:{localPart:'login',hostname:'login.adobelogin.com'}}),null,'related adobe login domain is a counterexample');
+assert.equal(S.evaluateSignalRule(brandRule,{from:{localPart:'alerts',hostname:'storage.googleapis.com'},urlFindings:[{status:'parsed',hostname:'storage.googleapis.com'}]}),null,'googleapis is not an exact google label');
+
+const packedRule={id:'p.v1',evaluator:'packed_brand_hostname',indicators:{brands,minBrands:2,fields:['sender','text','headers']}};
+assert.ok(S.evaluateSignalRule(packedRule,{text:'relay google-apple.microsoft.biz.cultivo.ro'}),'packed google/apple/microsoft hostname in text');
+assert.equal(S.evaluateSignalRule(packedRule,{text:'Google, Apple and Microsoft announced a partnership.'}),null,'prose brand names are not a packed hostname');
+assert.equal(S.evaluateSignalRule(packedRule,{from:{localPart:'notify',hostname:'outlook.office.microsoft.com'}}),null,'genuine Microsoft infrastructure is a counterexample');
+assert.equal(S.inferredOrgDomain('iusivkzr.adobe.salilen.me'),'salilen.me');
+assert.equal(S.inferredOrgDomain('google-apple.microsoft.biz.cultivo.ro'),'cultivo.ro');
+assert.equal(S.inferredOrgDomain('abcdefgh.word.sample.biz.id'),'sample.biz.id');
+
+const ossRule={id:'o.v1',evaluator:'display_brand_mismatch_and_phrases',indicators:{rolePhrases:['support team'],phrases:['developer marketing plan','github stars'],minBrandLength:4,stopwords:['support','team']}};
+assert.ok(S.evaluateSignalRule(ossRule,{from:{localPart:'market',hostname:'mcpcnserver.com'},displayName:'NiubiStar Support Team',subject:'Developer marketing plan for open-source projects'}));
+assert.equal(S.evaluateSignalRule(ossRule,{from:{localPart:'noreply',hostname:'github.com'},displayName:'GitHub Support Team',subject:'Developer marketing plan for open-source projects'}),null,'claimed brand in the sender domain is a counterexample');
+assert.equal(S.evaluateSignalRule(ossRule,{from:{localPart:'jane',hostname:'gmail.com'},displayName:'Jane Smith',text:'I maintain open-source projects and github stars.'}),null,'personal mail without a support-team role is a counterexample');
+
+const mediaRule={id:'m.v1',evaluator:'media_endorsement',indicators:{leadins:['as seen on'],mediaBrands:['cbs news','cbs',"men's health"],phrases:['dr. oz on cbs'],genuineDomains:['cbs.com','cbsnews.com','menshealth.com']}};
+assert.ok(S.evaluateSignalRule(mediaRule,{from:{localPart:'offers',hostname:'salilen.me'},subject:'As seen on CBS News & Men\'s Health'}));
+assert.ok(S.evaluateSignalRule(mediaRule,{from:{localPart:'offers',hostname:'random.example'},text:'Dr. Oz on CBS: a natural compound'}));
+assert.equal(S.evaluateSignalRule(mediaRule,{from:{localPart:'editor',hostname:'news.cbsnews.com'},subject:'As seen on CBS News tonight'}),null,'genuine CBS domain is a counterexample');
+
 console.log('Header parsing (Gmail, Microsoft, ARC, forged lower header), alignment, MS verdicts, Unicode, sender-rule safety and new signal evaluators passed.');

@@ -1,0 +1,20 @@
+{
+  "id": "cs-ikcdjdldgmkd",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-15",
+  "senderAddress": "market@mcpcnserver.com",
+  "senderDisplayName": "NiubiStar Support Team",
+  "subject": "Developer marketing plan for open-source projects",
+  "lureSnippets": [
+    "Developer marketing plan for open-source projects"
+  ],
+  "linkHostsAndPaths": [
+    "https://niubistar.com/"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "social.oss-dev-marketing-mismatch.v1"
+  ],
+  "notes": "unsolicited developer-marketing pitch; display brand does not match the sender domain; links were never opened or fetched"
+}

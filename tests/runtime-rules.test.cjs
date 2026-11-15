@@ -100,4 +100,30 @@ assert.equal(run({fromAddress:'newsletter@spinkong-news.com'}).messages[0].confi
 assert.ok(run({fromAddress:'Cjib-nietantwoorden-referentie-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee@casi-app.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.cjib-impersonation-unrelated-domain.v1'));
 assert.ok(run({fromAddress:'cjib-nietantwoorden-referentie-abcdef012345@renegades.sk'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.cjib-impersonation-unrelated-domain.v1'));
 assert.equal(run({fromAddress:'cjib-nietantwoorden-referentie-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee@mail.cjib.nl'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.cjib-impersonation-unrelated-domain.v1'),false);
+// nooreply@ random 9-11 letter .us is the documented rotating-campaign variant.
+assert.ok(run({fromAddress:'nooreply@icoutxooeem.us'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'));
+assert.ok(run({fromAddress:'nooreply@gupuapoolhb.us'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'));
+assert.equal(run({fromAddress:'noreply@icoutxooeem.us'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'),false);
+assert.equal(run({fromAddress:'nooreply@short.us'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'),false);
+// Brand label outside the registrable domain; genuine brand subdomains are counterexamples.
+assert.ok(run({fromAddress:'ofubztd@iusivkzr.adobe.salilen.me'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.brand-label-in-unrelated-domain.v1'));
+assert.equal(run({fromAddress:'noreply@mail.adobe.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.brand-label-in-unrelated-domain.v1'),false);
+assert.equal(run({fromAddress:'alerts@storage.googleapis.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.brand-label-in-unrelated-domain.v1'),false);
+// Packed multi-brand hostname in relay text; prose mentions and genuine Microsoft hosts are not.
+const packed=run({fromAddress:'nooreply@icoutxooeem.us',text:'relay google-apple.microsoft.biz.cultivo.ro'});
+assert.ok(packed.messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.packed-brand-hostname.v1'));
+assert.equal(run({text:'Google, Apple and Microsoft announced a partnership.'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.packed-brand-hostname.v1'),false);
+assert.equal(run({fromAddress:'notify@outlook.office.microsoft.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.packed-brand-hostname.v1'),false);
+// Unsolicited open-source marketing with a display-brand mismatch.
+const oss=run({fromAddress:'market@mcpcnserver.com',displayName:'NiubiStar Support Team',subject:'Developer marketing plan for open-source projects',urls:['https://niubistar.com/']});
+assert.ok(oss.messages[0].configuredSignalMatches.some(m=>m.ruleId==='social.oss-dev-marketing-mismatch.v1'));
+assert.equal(oss.messages[0].review.status,'review_recommended');
+assert.equal(run({fromAddress:'noreply@github.com',displayName:'GitHub Support Team',subject:'Developer marketing plan for open-source projects'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='social.oss-dev-marketing-mismatch.v1'),false);
+assert.equal(run({fromAddress:'jane@gmail.com',displayName:'Jane Smith',text:'I maintain open-source projects.'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='social.oss-dev-marketing-mismatch.v1'),false);
+// Watch-before-deleted urgency and fake media endorsement (supporting unless combined).
+const honey=run({fromAddress:'ofubztd@iusivkzr.adobe.salilen.me',displayName:'HoneyBoost',subject:'Watch before deleted: The simple shower trick that ended ED for men over 60',text:'As seen on CBS News & Men\'s Health\n111-957097'});
+const honeyIds=honey.messages[0].configuredSignalMatches.map(m=>m.ruleId);
+for(const id of ['identity.brand-label-in-unrelated-domain.v1','social.watch-before-deleted.v1','social.fake-media-endorsement.v1'])assert.ok(honeyIds.includes(id),id);
+assert.equal(honey.messages[0].review.status,'review_recommended');
+assert.equal(run({fromAddress:'editor@news.cbsnews.com',subject:'As seen on CBS News tonight'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='social.fake-media-endorsement.v1'),false);
 console.log('Real rule document: routing, runtime load, sender/auth/provider/Unicode/casino rules and CLI --analyze passed.');
