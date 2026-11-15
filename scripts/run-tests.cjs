@@ -26,4 +26,5 @@ run(['scripts/validate-rules.cjs']);
 run(['scripts/Controle-Email.cjs', '--self-test']);
 run(['scripts/Controle-Email.cjs', '--evaluate']);
 for (const file of tests) run([file]);
+run(['scripts/stats.cjs', '--render', '--check'], 'node scripts/stats.cjs --render --check');
 console.log(`All checks passed (${scripts.length} scripts syntax-checked, ${tests.length} test files).`);
