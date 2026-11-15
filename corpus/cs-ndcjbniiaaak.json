@@ -1,0 +1,25 @@
+{
+  "id": "cs-ndcjbniiaaak",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "nooreply@miuodhdzazs.us",
+  "senderDisplayName": "Neuropathy_Free",
+  "subject": "This natural neuropathy solution is 6x more effective than leading medications",
+  "lureSnippets": [
+    "🍂 DISCOVER THE JAPANESE WELLNESS SECRET 🍂",
+    "This Japanese Recipe for Nerve Pain Is Going Completely Viral!",
+    "Could This Ancient Recipe Help You Find Relief?",
+    "Discover What Everyone Is Talking About!",
+    "🍁 Fall is finally here!",
+    "As temperatures drop, many people notice changes in their nerve pain symptoms."
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/managelink/newligne.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "campaign 111.957097 (sq=111-957097 in storage.googleapis.com /managelink/newligne.html links); sender nooreply@ at random-letter .us domain; links were never opened or fetched"
+}
