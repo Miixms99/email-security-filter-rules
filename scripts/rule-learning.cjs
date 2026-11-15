@@ -37,7 +37,7 @@ function classifyRule(r){
  const i=r.indicators||{};
  const has=k=>Array.isArray(i[k])&&i[k].length>0;
  if(has('exactPaths')&&(has('markers')||has('urlParameters')))return 'campaign';
- if(has('senderDomains')||(i.senderAddressRegex&&typeof i.senderAddressRegex==='object'))return 'sender';
+ if(has('senderDomains')||(i.senderAddressRegex&&typeof i.senderAddressRegex==='object')||(i.variantSenderAddressRegex&&typeof i.variantSenderAddressRegex==='object')||(Array.isArray(i.senderAddressRegexes)&&i.senderAddressRegexes.length))return 'sender';
  return 'signal';
 }
 function runtimeRuleSet(document){
@@ -46,7 +46,7 @@ function runtimeRuleSet(document){
  for(const r of document.rules.filter(enabled)){
   const kind=classifyRule(r),i=r.indicators||{};
   if(kind==='campaign')set.campaignRules.push({id:r.id,markers:i.markers||[],urlParameters:i.urlParameters||[],exactPaths:i.exactPaths,...(i.hosts?{hosts:i.hosts}:{})});
-  else if(kind==='sender')set.senderRules.push({id:r.id,severity:r.severity,weight:r.weight,...(i.senderDomains?{senderDomains:i.senderDomains}:{}),...(i.senderAddressRegex?{senderAddressRegex:i.senderAddressRegex}:{})});
+  else if(kind==='sender')set.senderRules.push({id:r.id,severity:r.severity,weight:r.weight,...(i.senderDomains?{senderDomains:i.senderDomains}:{}),...(i.senderAddressRegex?{senderAddressRegex:i.senderAddressRegex}:{}),...(i.variantSenderAddressRegex?{variantSenderAddressRegex:i.variantSenderAddressRegex}:{}),...(Array.isArray(i.senderAddressRegexes)&&i.senderAddressRegexes.length?{senderAddressRegexes:i.senderAddressRegexes}:{})});
   else set.signalRules.push({id:r.id,category:r.category,severity:r.severity,weight:r.weight,...(r.evaluator?{evaluator:r.evaluator}:{}),indicators:i});
  }
  return set;

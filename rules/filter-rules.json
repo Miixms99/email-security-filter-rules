@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-15.3",
-  "generatedAt": "2026-11-15T13:26:00+01:00",
+  "filterRevision": "2026-11-15.4",
+  "generatedAt": "2026-11-15T18:20:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -1113,6 +1113,626 @@
       },
       "requiredCombination": "The sender local-part starts with the CJIB do-not-reply reference prefix, and the sender's registrable domain is not cjib.nl or a subdomain of it.",
       "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat mail from the genuine cjib.nl domain as a match.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.brand-label-in-unrelated-domain.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "evaluator": "brand_label_in_unrelated_host",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "brands": [
+          {
+            "token": "adobe",
+            "genuineDomains": [
+              "adobe.com",
+              "adobelogin.com",
+              "adobesystems.com",
+              "typekit.com",
+              "scene7.com"
+            ]
+          },
+          {
+            "token": "google",
+            "genuineDomains": [
+              "google.com",
+              "gmail.com",
+              "googlemail.com",
+              "googleapis.com",
+              "googleusercontent.com",
+              "youtube.com",
+              "withgoogle.com",
+              "google.co.uk",
+              "google.nl",
+              "google.de"
+            ]
+          },
+          {
+            "token": "gmail",
+            "genuineDomains": [
+              "gmail.com",
+              "google.com",
+              "googlemail.com"
+            ]
+          },
+          {
+            "token": "apple",
+            "genuineDomains": [
+              "apple.com",
+              "icloud.com",
+              "me.com",
+              "mac.com",
+              "mzstatic.com"
+            ]
+          },
+          {
+            "token": "icloud",
+            "genuineDomains": [
+              "icloud.com",
+              "apple.com",
+              "me.com",
+              "mac.com"
+            ]
+          },
+          {
+            "token": "microsoft",
+            "genuineDomains": [
+              "microsoft.com",
+              "microsoftonline.com",
+              "office.com",
+              "office365.com",
+              "outlook.com",
+              "live.com",
+              "hotmail.com",
+              "msn.com",
+              "azure.com",
+              "windows.net",
+              "xbox.com"
+            ]
+          },
+          {
+            "token": "outlook",
+            "genuineDomains": [
+              "outlook.com",
+              "microsoft.com",
+              "office.com",
+              "office365.com",
+              "live.com",
+              "hotmail.com"
+            ]
+          },
+          {
+            "token": "office",
+            "genuineDomains": [
+              "office.com",
+              "office365.com",
+              "microsoft.com",
+              "microsoftonline.com"
+            ]
+          },
+          {
+            "token": "amazon",
+            "genuineDomains": [
+              "amazon.com",
+              "amazon.co.uk",
+              "amazon.de",
+              "amazon.nl",
+              "amazon.fr",
+              "amazonaws.com",
+              "amazon.co.jp"
+            ]
+          },
+          {
+            "token": "facebook",
+            "genuineDomains": [
+              "facebook.com",
+              "fb.com",
+              "meta.com",
+              "messenger.com"
+            ]
+          },
+          {
+            "token": "instagram",
+            "genuineDomains": [
+              "instagram.com",
+              "facebook.com",
+              "meta.com"
+            ]
+          },
+          {
+            "token": "whatsapp",
+            "genuineDomains": [
+              "whatsapp.com",
+              "facebook.com",
+              "meta.com"
+            ]
+          },
+          {
+            "token": "netflix",
+            "genuineDomains": [
+              "netflix.com"
+            ]
+          },
+          {
+            "token": "paypal",
+            "genuineDomains": [
+              "paypal.com",
+              "paypal.me",
+              "paypal.co.uk"
+            ]
+          },
+          {
+            "token": "linkedin",
+            "genuineDomains": [
+              "linkedin.com"
+            ]
+          },
+          {
+            "token": "github",
+            "genuineDomains": [
+              "github.com",
+              "github.io",
+              "githubusercontent.com"
+            ]
+          },
+          {
+            "token": "youtube",
+            "genuineDomains": [
+              "youtube.com",
+              "youtu.be",
+              "google.com",
+              "ytimg.com"
+            ]
+          },
+          {
+            "token": "twitter",
+            "genuineDomains": [
+              "twitter.com",
+              "x.com",
+              "twimg.com"
+            ]
+          },
+          {
+            "token": "samsung",
+            "genuineDomains": [
+              "samsung.com"
+            ]
+          },
+          {
+            "token": "binance",
+            "genuineDomains": [
+              "binance.com",
+              "binance.us"
+            ]
+          },
+          {
+            "token": "coinbase",
+            "genuineDomains": [
+              "coinbase.com"
+            ]
+          },
+          {
+            "token": "stripe",
+            "genuineDomains": [
+              "stripe.com"
+            ]
+          },
+          {
+            "token": "openai",
+            "genuineDomains": [
+              "openai.com",
+              "chatgpt.com"
+            ]
+          },
+          {
+            "token": "chatgpt",
+            "genuineDomains": [
+              "chatgpt.com",
+              "openai.com"
+            ]
+          }
+        ],
+        "fields": [
+          "sender",
+          "links"
+        ],
+        "supportingSignals": [
+          "a well-known brand token appears as a hostname label outside the registrable domain, such as a random label then adobe then an unrelated domain on .me",
+          "the registrable domain is not a genuine domain of that brand"
+        ],
+        "counterexamples": [
+          "mail or links on the brand's own registrable domain or a subdomain of it, such as mail.adobe.com or accounts.google.com",
+          "a hostname whose registrable domain itself contains the brand label"
+        ]
+      },
+      "requiredCombination": "A listed well-known brand token appears as a complete hostname label of the sender or a link, that label sits outside the registrable domain, and the registrable domain is not a genuine domain of the brand. A genuine brand subdomain is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat ordinary brand subdomains on the genuine registrable domain as a match.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.packed-brand-hostname.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "evaluator": "packed_brand_hostname",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "brands": [
+          {
+            "token": "adobe",
+            "genuineDomains": [
+              "adobe.com",
+              "adobelogin.com",
+              "adobesystems.com",
+              "typekit.com",
+              "scene7.com"
+            ]
+          },
+          {
+            "token": "google",
+            "genuineDomains": [
+              "google.com",
+              "gmail.com",
+              "googlemail.com",
+              "googleapis.com",
+              "googleusercontent.com",
+              "youtube.com",
+              "withgoogle.com",
+              "google.co.uk",
+              "google.nl",
+              "google.de"
+            ]
+          },
+          {
+            "token": "gmail",
+            "genuineDomains": [
+              "gmail.com",
+              "google.com",
+              "googlemail.com"
+            ]
+          },
+          {
+            "token": "apple",
+            "genuineDomains": [
+              "apple.com",
+              "icloud.com",
+              "me.com",
+              "mac.com",
+              "mzstatic.com"
+            ]
+          },
+          {
+            "token": "icloud",
+            "genuineDomains": [
+              "icloud.com",
+              "apple.com",
+              "me.com",
+              "mac.com"
+            ]
+          },
+          {
+            "token": "microsoft",
+            "genuineDomains": [
+              "microsoft.com",
+              "microsoftonline.com",
+              "office.com",
+              "office365.com",
+              "outlook.com",
+              "live.com",
+              "hotmail.com",
+              "msn.com",
+              "azure.com",
+              "windows.net",
+              "xbox.com"
+            ]
+          },
+          {
+            "token": "outlook",
+            "genuineDomains": [
+              "outlook.com",
+              "microsoft.com",
+              "office.com",
+              "office365.com",
+              "live.com",
+              "hotmail.com"
+            ]
+          },
+          {
+            "token": "office",
+            "genuineDomains": [
+              "office.com",
+              "office365.com",
+              "microsoft.com",
+              "microsoftonline.com"
+            ]
+          },
+          {
+            "token": "amazon",
+            "genuineDomains": [
+              "amazon.com",
+              "amazon.co.uk",
+              "amazon.de",
+              "amazon.nl",
+              "amazon.fr",
+              "amazonaws.com",
+              "amazon.co.jp"
+            ]
+          },
+          {
+            "token": "facebook",
+            "genuineDomains": [
+              "facebook.com",
+              "fb.com",
+              "meta.com",
+              "messenger.com"
+            ]
+          },
+          {
+            "token": "instagram",
+            "genuineDomains": [
+              "instagram.com",
+              "facebook.com",
+              "meta.com"
+            ]
+          },
+          {
+            "token": "whatsapp",
+            "genuineDomains": [
+              "whatsapp.com",
+              "facebook.com",
+              "meta.com"
+            ]
+          },
+          {
+            "token": "netflix",
+            "genuineDomains": [
+              "netflix.com"
+            ]
+          },
+          {
+            "token": "paypal",
+            "genuineDomains": [
+              "paypal.com",
+              "paypal.me",
+              "paypal.co.uk"
+            ]
+          },
+          {
+            "token": "linkedin",
+            "genuineDomains": [
+              "linkedin.com"
+            ]
+          },
+          {
+            "token": "github",
+            "genuineDomains": [
+              "github.com",
+              "github.io",
+              "githubusercontent.com"
+            ]
+          },
+          {
+            "token": "youtube",
+            "genuineDomains": [
+              "youtube.com",
+              "youtu.be",
+              "google.com",
+              "ytimg.com"
+            ]
+          },
+          {
+            "token": "twitter",
+            "genuineDomains": [
+              "twitter.com",
+              "x.com",
+              "twimg.com"
+            ]
+          },
+          {
+            "token": "samsung",
+            "genuineDomains": [
+              "samsung.com"
+            ]
+          },
+          {
+            "token": "binance",
+            "genuineDomains": [
+              "binance.com",
+              "binance.us"
+            ]
+          },
+          {
+            "token": "coinbase",
+            "genuineDomains": [
+              "coinbase.com"
+            ]
+          },
+          {
+            "token": "stripe",
+            "genuineDomains": [
+              "stripe.com"
+            ]
+          },
+          {
+            "token": "openai",
+            "genuineDomains": [
+              "openai.com",
+              "chatgpt.com"
+            ]
+          },
+          {
+            "token": "chatgpt",
+            "genuineDomains": [
+              "chatgpt.com",
+              "openai.com"
+            ]
+          }
+        ],
+        "minBrands": 2,
+        "fields": [
+          "sender",
+          "links",
+          "text",
+          "headers"
+        ],
+        "supportingSignals": [
+          "a single hostname packs two or more well-known technology brand names as labels or hyphenated tokens, such as google-apple.microsoft on an unrelated domain",
+          "the hostname may appear in the sender domain, a link, body text, or a relay or Received header"
+        ],
+        "counterexamples": [
+          "a hostname whose registrable domain belongs to one of the matched brands, such as outlook.office.microsoft.com",
+          "prose that names several brands without packing them into one hostname"
+        ]
+      },
+      "requiredCombination": "One hostname contains at least two distinct listed brand tokens as labels or hyphenated parts, and its registrable domain is not a genuine domain of any of those brands. Ordinary brand infrastructure and prose that merely mentions several brands are counterexamples.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.oss-dev-marketing-mismatch.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "evaluator": "display_brand_mismatch_and_phrases",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "rolePhrases": [
+          "support team",
+          "official",
+          "marketing team",
+          "dev team",
+          "developer team"
+        ],
+        "phrases": [
+          "developer marketing plan",
+          "marketing plan for open-source",
+          "marketing plan for open source",
+          "promote your open-source",
+          "promote your open source",
+          "promote your github",
+          "github star",
+          "github stars",
+          "boost your github"
+        ],
+        "minBrandLength": 4,
+        "stopwords": [
+          "support",
+          "team",
+          "official",
+          "marketing",
+          "developer",
+          "dev",
+          "the",
+          "inc",
+          "llc",
+          "ltd",
+          "corp",
+          "company",
+          "mail",
+          "email",
+          "news",
+          "newsletter",
+          "open",
+          "source"
+        ],
+        "supportingSignals": [
+          "the display name claims a product or brand plus a support, official, or marketing-team role",
+          "that brand token does not appear in the sender domain",
+          "the subject or body promotes developer marketing, GitHub stars, or open-source project promotion"
+        ],
+        "counterexamples": [
+          "mail whose display-name brand token appears in the sender domain, such as GitHub Support Team from github.com",
+          "personal mail without a support or official-team role in the display name",
+          "a message that mentions open source without the promotional phrases"
+        ]
+      },
+      "requiredCombination": "The display name includes a listed official or support-team role and a brand token of at least four letters that does not appear in the sender domain, and the subject or body contains a listed unsolicited open-source or GitHub promotion phrase.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat mail from the claimed brand's own domain as a match.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.watch-before-deleted.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "evaluator": "text_phrases",
+      "severity": "low",
+      "weight": 1,
+      "indicators": {
+        "phrases": [
+          "watch before deleted",
+          "watch before it's deleted",
+          "watch before its deleted",
+          "watch before this is deleted",
+          "watch before this gets deleted",
+          "watch before it's taken down"
+        ],
+        "minMatches": 1,
+        "counterexamples": [
+          "ordinary expiration or deletion notices that do not use this watch-before-deleted clickbait wording"
+        ]
+      },
+      "requiredCombination": "The subject or body contains a listed 'watch before deleted' urgency phrase. This rule is supporting context only unless combined with an independent identity, campaign, or destination mismatch.",
+      "verdictEffect": "Supporting review signal only. This wording alone must never block or classify a message.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.fake-media-endorsement.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "evaluator": "media_endorsement",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "leadins": [
+          "as seen on",
+          "as featured on",
+          "as seen in",
+          "as featured in"
+        ],
+        "mediaBrands": [
+          "cbs news",
+          "cbs",
+          "men's health",
+          "mens health",
+          "dr. oz",
+          "dr oz",
+          "cnn",
+          "fox news",
+          "nbc news",
+          "abc news",
+          "forbes"
+        ],
+        "phrases": [
+          "dr. oz on cbs",
+          "dr oz on cbs",
+          "dr. oz reveals",
+          "dr oz reveals"
+        ],
+        "windowChars": 80,
+        "genuineDomains": [
+          "cbs.com",
+          "cbsnews.com",
+          "paramount.com",
+          "viacomcbs.com",
+          "menshealth.com",
+          "hearst.com",
+          "cnn.com",
+          "foxnews.com",
+          "nbc.com",
+          "nbcnews.com",
+          "abc.com",
+          "abcnews.go.com",
+          "forbes.com"
+        ],
+        "counterexamples": [
+          "mail from a listed genuine media domain, such as cbsnews.com or menshealth.com",
+          "news coverage that names a programme without an 'as seen on' endorsement lure"
+        ]
+      },
+      "requiredCombination": "The subject or body uses an 'as seen on' or 'as featured on' endorsement next to a listed media brand, or a listed Dr. Oz on CBS style phrase, and the sender domain is not a genuine domain of that media brand.",
+      "verdictEffect": "Supporting review signal only unless combined with an independent identity, campaign, or destination mismatch. Never classify or act from this rule alone.",
       "privateDataExcluded": true
     }
   ]

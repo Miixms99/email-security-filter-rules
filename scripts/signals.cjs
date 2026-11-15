@@ -161,6 +161,10 @@ function compilePattern(source, label) {
   if (/\([^)]*[+*}]\)[+*{]/.test(source) || /\\\d/.test(source)) fail(`Nested quantifier or backreference refused in ${label}`);
   return new RegExp(source);
 }
+function compileSenderShape(shape, label) {
+  if (!shape || typeof shape !== 'object' || Array.isArray(shape)) fail(`Invalid ${label}`);
+  return { local: compilePattern(shape.localPart, label + ' localPart'), domain: compilePattern(shape.domain, label + ' domain') };
+}
 function normalizeSenderRules(value) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 100) fail('senderRules must be an array of at most 100 rules');
@@ -168,15 +172,16 @@ function normalizeSenderRules(value) {
     if (!rule || typeof rule.id !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,119}$/i.test(rule.id)) fail(`Invalid senderRules[${i}]`);
     const domains = rule.senderDomains ?? [];
     if (!Array.isArray(domains) || domains.length > 500 || domains.some(d => typeof d !== 'string' || !/^[a-z0-9.-]{3,253}$/.test(d) || !d.includes('.'))) fail(`Invalid senderRules[${i}].senderDomains`);
-    const shape = rule.senderAddressRegex;
-    let local = null, domain = null;
-    if (shape !== undefined) {
-      if (!shape || typeof shape !== 'object') fail(`Invalid senderRules[${i}].senderAddressRegex`);
-      local = compilePattern(shape.localPart, rule.id + ' localPart');
-      domain = compilePattern(shape.domain, rule.id + ' domain');
+    const shapes = [];
+    if (rule.senderAddressRegex !== undefined) shapes.push(compileSenderShape(rule.senderAddressRegex, rule.id + ' senderAddressRegex'));
+    if (rule.variantSenderAddressRegex !== undefined) shapes.push(compileSenderShape(rule.variantSenderAddressRegex, rule.id + ' variantSenderAddressRegex'));
+    const extras = rule.senderAddressRegexes;
+    if (extras !== undefined) {
+      if (!Array.isArray(extras) || extras.length > 10) fail(`Invalid senderRules[${i}].senderAddressRegexes`);
+      extras.forEach((shape, j) => shapes.push(compileSenderShape(shape, `${rule.id} senderAddressRegexes[${j}]`)));
     }
-    if (!domains.length && !local) fail(`Sender rule ${rule.id} needs senderDomains or senderAddressRegex`);
-    return { id: rule.id, severity: rule.severity || 'medium', weight: Number.isFinite(rule.weight) ? rule.weight : 2, senderDomains: [...new Set(domains)], local, domain };
+    if (!domains.length && !shapes.length) fail(`Sender rule ${rule.id} needs senderDomains or senderAddressRegex`);
+    return { id: rule.id, severity: rule.severity || 'medium', weight: Number.isFinite(rule.weight) ? rule.weight : 2, senderDomains: [...new Set(domains)], shapes };
   });
 }
 function senderMatches(address, rules) {
@@ -186,7 +191,9 @@ function senderMatches(address, rules) {
   for (const rule of rules) {
     const domain = rule.senderDomains.find(d => host === d || host.endsWith('.' + d));
     if (domain) out.push({ ruleId: rule.id, type: 'sender_domain', domain, severity: rule.severity, weight: rule.weight });
-    else if (rule.local && rule.local.test(localPart) && rule.domain.test(host)) out.push({ ruleId: rule.id, type: 'sender_address_shape', severity: rule.severity, weight: rule.weight });
+    else if ((rule.shapes || []).some(shape => shape.local.test(localPart) && shape.domain.test(host))) {
+      out.push({ ruleId: rule.id, type: 'sender_address_shape', severity: rule.severity, weight: rule.weight });
+    }
   }
   return out;
 }
@@ -194,7 +201,8 @@ function senderMatches(address, rules) {
 const EVALUATORS = Object.freeze(['auth_result_tokens', 'auth_missing_or_inconsistent', 'return_path_mismatch', 'reply_to_mismatch', 'link_visible_mismatch',
   'host_html_path', 'dmarc_alignment', 'ms_compauth', 'ms_verdict', 'unicode_confusable',
   'attachment_types', 'attachment_qr_bait', 'calendar_invite_lure', 'domain_age', 'urlhaus_host', 'spamhaus_dbl', 'first_contact_brand',
-  'text_phrases', 'letter_for_digit_amount', 'display_name_and_local_part', 'impersonation_local_part_unrelated_domain']);
+  'text_phrases', 'letter_for_digit_amount', 'display_name_and_local_part', 'impersonation_local_part_unrelated_domain',
+  'brand_label_in_unrelated_host', 'packed_brand_hostname', 'display_brand_mismatch_and_phrases', 'media_endorsement']);
 function normalizeSignalRules(value) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 200) fail('signalRules must be an array of at most 200 rules');
@@ -354,6 +362,73 @@ function evaluateSignalRule(rule, ctx) {
       const isGenuine = genuine.some(d => org === d || host === d || org.endsWith('.' + d) || host.endsWith('.' + d));
       return isGenuine ? null : { localPart: local, senderDomain: org, matchedToken: matched };
     }
+    case 'brand_label_in_unrelated_host': {
+      const brands = normalizeBrandEntries(ind);
+      if (!brands.length) return null;
+      const hits = [];
+      for (const item of hostsToInspect(ctx, ind.fields || ['sender', 'links'])) {
+        const found = brandHitsInHost(item.host, brands, ctx.orgDomain);
+        if (found.brands.length) hits.push({ host: found.host, orgDomain: found.org, brands: found.brands, source: item.source });
+      }
+      return hits.length ? { hosts: hits.slice(0, 10) } : null;
+    }
+    case 'packed_brand_hostname': {
+      const brands = normalizeBrandEntries(ind);
+      const min = Number.isFinite(ind.minBrands) && ind.minBrands >= 2 ? ind.minBrands : 2;
+      if (!brands.length) return null;
+      const hits = [];
+      for (const item of hostsToInspect(ctx, ind.fields || ['sender', 'links', 'text', 'headers'])) {
+        const found = brandHitsInHost(item.host, brands, ctx.orgDomain);
+        if (found.brands.length >= min) hits.push({ host: found.host, orgDomain: found.org, brands: found.brands, source: item.source });
+      }
+      return hits.length ? { hosts: hits.slice(0, 10) } : null;
+    }
+    case 'display_brand_mismatch_and_phrases': {
+      if (!ctx.from) return null;
+      const hay = scanText(ctx).toLowerCase();
+      const phrases = (ind.phrases || []).map(p => String(p).toLowerCase()).filter(p => p.length >= 8);
+      const rolePhrases = (ind.rolePhrases || []).map(p => String(p).toLowerCase()).filter(p => p.length >= 4);
+      if (!phrases.length || phrases.length > 40) return null;
+      const phraseHits = phrases.filter(p => hay.includes(p));
+      if (!phraseHits.length) return null;
+      const display = normalizeName(ctx.displayName);
+      if (rolePhrases.length && !rolePhrases.some(r => display.includes(r))) return null;
+      const stop = new Set((ind.stopwords || []).map(s => String(s).toLowerCase()));
+      const minLen = Number.isFinite(ind.minBrandLength) && ind.minBrandLength >= 3 ? ind.minBrandLength : 4;
+      const tokens = display.split(/[^a-z0-9]+/).filter(t => t.length >= minLen && !stop.has(t));
+      if (!tokens.length) return null;
+      const host = String(ctx.from.hostname || '').toLowerCase().replace(/\.$/, '');
+      const org = inferredOrgDomain(host, ctx.orgDomain);
+      const unmatched = tokens.filter(t => !host.includes(t) && !org.includes(t));
+      if (!unmatched.length) return null;
+      return { displayBrands: unmatched.slice(0, 8), phrases: phraseHits.slice(0, 10), senderDomain: org };
+    }
+    case 'media_endorsement': {
+      const hay = scanText(ctx).toLowerCase();
+      const leadins = (ind.leadins || ['as seen on', 'as featured on', 'as seen in', 'as featured in']).map(s => String(s).toLowerCase()).filter(s => s.length >= 8);
+      const media = (ind.mediaBrands || []).map(s => String(s).toLowerCase()).filter(s => s.length >= 3);
+      const exact = (ind.phrases || []).map(s => String(s).toLowerCase()).filter(s => s.length >= 8);
+      const windowChars = Number.isFinite(ind.windowChars) && ind.windowChars >= 10 ? Math.min(ind.windowChars, 200) : 80;
+      if ((!media.length && !exact.length) || media.length + exact.length > 80) return null;
+      const hits = [];
+      for (const phrase of exact) if (hay.includes(phrase)) hits.push(phrase);
+      for (const lead of leadins) {
+        let from = 0;
+        while (from < hay.length) {
+          const at = hay.indexOf(lead, from);
+          if (at === -1) break;
+          const window = hay.slice(at + lead.length, at + lead.length + windowChars);
+          for (const brand of media) if (window.includes(brand)) hits.push(lead + ' ' + brand);
+          from = at + lead.length;
+        }
+      }
+      if (!hits.length) return null;
+      const host = ctx.from ? String(ctx.from.hostname || '').toLowerCase().replace(/\.$/, '') : '';
+      const org = host ? inferredOrgDomain(host, ctx.orgDomain) : '';
+      const genuine = (ind.genuineDomains || []).map(d => String(d).toLowerCase().trim()).filter(d => d.includes('.'));
+      if (host && isGenuineDomain(org, host, genuine)) return null;
+      return { endorsements: [...new Set(hits)].slice(0, 10) };
+    }
     default:
       return undefined; // no evaluator: applied by the assistant during review
   }
@@ -391,5 +466,95 @@ function enrichmentDomains(ctx) {
   return [...out];
 }
 
+
+const MULTI_PART_PUBLIC_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'me.uk', 'net.uk',
+  'com.au', 'net.au', 'org.au', 'edu.au',
+  'co.nz', 'net.nz', 'org.nz',
+  'co.jp', 'or.jp', 'ne.jp',
+  'com.br', 'com.mx', 'com.ar', 'co.in', 'co.za', 'com.cn', 'co.kr', 'com.tw',
+  'biz.id', 'my.id', 'web.id', 'co.id', 'or.id', 'ac.id',
+  'com.tr', 'com.sg', 'co.il', 'com.hk', 'co.th'
+]);
+function inferredOrgDomain(host, orgDomainFn) {
+  const hostNorm = String(host || '').toLowerCase().replace(/\.$/, '');
+  if (!hostNorm) return '';
+  if (typeof orgDomainFn === 'function') {
+    const value = orgDomainFn(hostNorm);
+    if (value) return String(value).toLowerCase().replace(/\.$/, '');
+  }
+  const labels = hostNorm.split('.').filter(Boolean);
+  if (labels.length >= 3 && MULTI_PART_PUBLIC_SUFFIXES.has(labels.slice(-2).join('.'))) return labels.slice(-3).join('.');
+  return labels.length >= 2 ? labels.slice(-2).join('.') : hostNorm;
+}
+function hostnameLabelsAndTokens(host) {
+  const hostNorm = String(host || '').toLowerCase().replace(/\.$/, '');
+  const labels = hostNorm.split('.').filter(Boolean);
+  const tokens = [];
+  for (const label of labels) {
+    tokens.push(label);
+    if (label.includes('-')) for (const part of label.split('-')) if (part) tokens.push(part);
+  }
+  return { host: hostNorm, labels, tokens };
+}
+function isGenuineDomain(org, host, genuineDomains) {
+  const orgN = String(org || '').toLowerCase(), hostN = String(host || '').toLowerCase();
+  return (genuineDomains || []).some((d) => {
+    const g = String(d).toLowerCase().trim();
+    return g.includes('.') && (orgN === g || hostN === g || orgN.endsWith('.' + g) || hostN.endsWith('.' + g));
+  });
+}
+function normalizeBrandEntries(ind) {
+  const entries = [];
+  for (const item of ind.brands || []) {
+    if (typeof item === 'string') {
+      const token = item.toLowerCase().trim();
+      if (token.length >= 3) entries.push({ token, genuineDomains: [] });
+    } else if (item && typeof item === 'object' && item.token) {
+      const token = String(item.token).toLowerCase().trim();
+      if (token.length >= 3) entries.push({ token, genuineDomains: (item.genuineDomains || []).map(d => String(d).toLowerCase().trim()).filter(d => d.includes('.')) });
+    }
+  }
+  return entries.slice(0, 80);
+}
+function hostsToInspect(ctx, fields) {
+  const wanted = new Set(Array.isArray(fields) && fields.length ? fields : ['sender', 'links', 'text']);
+  const hosts = [];
+  const seen = new Set();
+  const add = (host, source) => {
+    const value = String(host || '').toLowerCase().replace(/\.$/, '');
+    if (!value || seen.has(source + ':' + value)) return;
+    seen.add(source + ':' + value);
+    hosts.push({ host: value, source });
+  };
+  if (wanted.has('sender') && ctx.from?.hostname) add(ctx.from.hostname, 'sender');
+  if (wanted.has('links')) {
+    for (const finding of ctx.urlFindings || []) if (finding.status === 'parsed' && finding.hostname) add(finding.hostname, 'link');
+  }
+  const HOST_RE = /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi;
+  if (wanted.has('text')) {
+    for (const match of scanText(ctx).matchAll(HOST_RE)) add(match[0], 'text');
+  }
+  if (wanted.has('headers') || wanted.has('text')) {
+    for (const header of ctx.headers || []) {
+      for (const match of String(header.value || '').matchAll(HOST_RE)) add(match[0], 'header');
+    }
+  }
+  return hosts;
+}
+function brandHitsInHost(host, brands, orgDomainFn) {
+  const { tokens } = hostnameLabelsAndTokens(host);
+  const org = inferredOrgDomain(host, orgDomainFn);
+  const hits = [];
+  for (const brand of brands) {
+    if (!tokens.includes(brand.token)) continue;
+    if (hostnameLabelsAndTokens(org).tokens.includes(brand.token)) continue;
+    if (isGenuineDomain(org, host, brand.genuineDomains)) continue;
+    hits.push(brand.token);
+  }
+  return { host: String(host || '').toLowerCase().replace(/\.$/, ''), org, brands: [...new Set(hits)] };
+}
+
 module.exports = { normalizeHeaders, parseAuthResults, parseAuthResultsValue, dmarcAlignment, parseMsAntispam, unicodeFindings, idnFindings, skeleton, CONFUSABLES,
-  normalizeSenderRules, senderMatches, normalizeSignalRules, evaluateSignalRule, EVALUATORS, compilePattern, letterForDigitAmountTokens, scanText };
+  normalizeSenderRules, senderMatches, normalizeSignalRules, evaluateSignalRule, EVALUATORS, compilePattern, letterForDigitAmountTokens, scanText,
+  inferredOrgDomain, hostnameLabelsAndTokens, brandHitsInHost, isGenuineDomain };
