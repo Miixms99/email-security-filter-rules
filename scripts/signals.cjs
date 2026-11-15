@@ -193,7 +193,8 @@ function senderMatches(address, rules) {
 
 const EVALUATORS = Object.freeze(['auth_result_tokens', 'auth_missing_or_inconsistent', 'return_path_mismatch', 'reply_to_mismatch', 'link_visible_mismatch',
   'host_html_path', 'dmarc_alignment', 'ms_compauth', 'ms_verdict', 'unicode_confusable',
-  'attachment_types', 'attachment_qr_bait', 'calendar_invite_lure', 'domain_age', 'urlhaus_host', 'spamhaus_dbl', 'first_contact_brand']);
+  'attachment_types', 'attachment_qr_bait', 'calendar_invite_lure', 'domain_age', 'urlhaus_host', 'spamhaus_dbl', 'first_contact_brand',
+  'text_phrases', 'letter_for_digit_amount', 'display_name_and_local_part']);
 function normalizeSignalRules(value) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 200) fail('signalRules must be an array of at most 200 rules');
@@ -307,9 +308,53 @@ function evaluateSignalRule(rule, ctx) {
       const claimed = brands.filter(b => tokens.includes(b) && !labels.some(l => l.includes(b)));
       return claimed.length ? { senderDomain: fromOrg, claimedBrands: claimed } : null;
     }
+    case 'text_phrases': {
+      const hay = scanText(ctx).toLowerCase();
+      const phrases = (ind.phrases || []).map(p => String(p).toLowerCase()).filter(p => p.length >= 3);
+      if (!phrases.length || phrases.length > 80) return null;
+      const min = Number.isFinite(ind.minMatches) && ind.minMatches >= 1 ? ind.minMatches : 1;
+      const hits = phrases.filter(p => hay.includes(p));
+      return hits.length >= min ? { phrases: hits.slice(0, 20) } : null;
+    }
+    case 'letter_for_digit_amount': {
+      const tokens = letterForDigitAmountTokens(scanText(ctx));
+      return tokens.length ? { tokens: tokens.slice(0, 10) } : null;
+    }
+    case 'display_name_and_local_part': {
+      if (!ctx.from) return null;
+      const names = (ind.displayNames || []).map(n => normalizeName(n)).filter(Boolean);
+      const locals = (ind.localParts || []).map(n => String(n).toLowerCase().trim()).filter(Boolean);
+      if (!names.length || !locals.length || names.length > 40 || locals.length > 40) return null;
+      const display = normalizeName(ctx.displayName);
+      const local = String(ctx.from.localPart || '').toLowerCase();
+      const nameHit = names.find(n => display === n);
+      const localHit = locals.includes(local);
+      return nameHit && localHit ? { displayName: nameHit, localPart: local } : null;
+    }
     default:
       return undefined; // no evaluator: applied by the assistant during review
   }
+}
+function scanText(ctx) {
+  const headerSubject = (ctx.headers || []).filter(h => h.name === 'subject').map(h => h.value).join('\n');
+  return [ctx.subject, headerSubject, ctx.displayName, ctx.text].filter(Boolean).join('\n');
+}
+function normalizeName(value) { return String(value || '').normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase(); }
+// Letter-for-digit stand-ins in money amounts or number tokens (O/o for 0; I/l for 1
+// only next to a currency marker, so highway names like I-95 are not flagged).
+function letterForDigitAmountTokens(text) {
+  const t = String(text || '').normalize('NFKC');
+  if (!t) return [];
+  const hits = [];
+  const currency = /(?:[€$£]|EUR|USD|GBP)\s*([0-9OIl]{1,3}(?:[.,][0-9OIl]{3})*(?:[.,][0-9OIl]{1,2})?|[0-9OIl]+(?:[.,][0-9OIl]+)?)/gi;
+  for (const m of t.matchAll(currency)) {
+    if (m[1] && /[OIl]/i.test(m[1]) && /\d/.test(m[1])) hits.push(m[0].replace(/\s+/g, ' ').trim());
+  }
+  const oh = /\b[0-9]*[Oo][0-9Oo]*(?:[.,][0-9Oo]+)?\b/g;
+  for (const m of t.matchAll(oh)) {
+    if (/\d/.test(m[0]) && /[Oo]/.test(m[0]) && !hits.some(h => h.includes(m[0]))) hits.push(m[0]);
+  }
+  return [...new Set(hits)];
 }
 function matchingAttachments(attachments, ind) {
   const exts = (ind.extensions || []).map(e => String(e).toLowerCase()), prefixes = (ind.mimePrefixes || []).map(m => String(m).toLowerCase());
@@ -324,4 +369,4 @@ function enrichmentDomains(ctx) {
 }
 
 module.exports = { normalizeHeaders, parseAuthResults, parseAuthResultsValue, dmarcAlignment, parseMsAntispam, unicodeFindings, idnFindings, skeleton, CONFUSABLES,
-  normalizeSenderRules, senderMatches, normalizeSignalRules, evaluateSignalRule, EVALUATORS, compilePattern };
+  normalizeSenderRules, senderMatches, normalizeSignalRules, evaluateSignalRule, EVALUATORS, compilePattern, letterForDigitAmountTokens, scanText };

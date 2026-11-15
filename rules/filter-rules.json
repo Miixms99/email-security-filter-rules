@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-15.1",
-  "generatedAt": "2026-11-15T08:00:00+01:00",
+  "filterRevision": "2026-11-15.2",
+  "generatedAt": "2026-11-15T13:00:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -160,7 +160,9 @@
       "indicators": {
         "senderDomains": [
           "cloudtivo2.biz",
-          "belilalune.web.id"
+          "belilalune.web.id",
+          "ravenstone.pro",
+          "buyharbor.me"
         ]
       },
       "requiredCombination": "The exact sender registered domain matches a listed domain that had repeated campaign observations and no legitimate counterexample in reviewed mailboxes. Shared or public-infrastructure domains must never be listed here.",
@@ -841,6 +843,98 @@
       },
       "requiredCombination": "The sender's organizational domain has no entry in the local contact history and the display name (confusable skeleton) claims a listed brand that does not appear in the sender domain.",
       "verdictEffect": "Supporting review signal, comparable to a first-contact safety tip. Seed the history from known legitimate mail first; an empty history makes every sender a first contact.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.gambling-casino-lures.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "evaluator": "text_phrases",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "phrases": [
+          "free spins",
+          "free spin",
+          "first deposit bonus",
+          "deposit bonus",
+          "no deposit bonus",
+          "rakeback",
+          "wagering requirement",
+          "wagering requirements",
+          "casino bonus",
+          "slot bonus",
+          "welcome pack of",
+          "welcome bonus"
+        ],
+        "minMatches": 1,
+        "counterexamples": [
+          "ordinary retail cashback or credit-card rewards without gambling phrases",
+          "news coverage that mentions a casino without a promotional lure"
+        ]
+      },
+      "requiredCombination": "At least one configured gambling or casino promotional phrase is present in the subject or body. An ordinary invoice, receipt, or retail cashback message without these phrases is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. The maintained mailbox treats unsolicited gambling promotion as unwanted mail, but this rule still does not authorize an automatic mailbox action.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "obfuscation.letter-for-digit-amount.v1",
+      "status": "signal_only",
+      "category": "obfuscation",
+      "evaluator": "letter_for_digit_amount",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "digitStandins": {
+          "O": "0",
+          "o": "0",
+          "I": "1",
+          "l": "1"
+        },
+        "currencyMarkers": [
+          "€",
+          "$",
+          "£",
+          "EUR",
+          "USD",
+          "GBP"
+        ],
+        "examples": [
+          "€1,25O",
+          "2OO",
+          "€l00"
+        ]
+      },
+      "requiredCombination": "A currency amount or number-like token mixes ordinary digits with a lookalike letter used as a digit (capital or lowercase O for 0; I or l for 1 only when a currency marker is present). A normal invoice that uses real digits, or a highway or product code such as I-95, is a counterexample.",
+      "verdictEffect": "Supporting review signal only. Obfuscated amounts often appear in the subject while the body uses real digits; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "campaign.lucky-boom-outlet-sender.v1",
+      "status": "signal_only",
+      "category": "campaign_correlation",
+      "evaluator": "display_name_and_local_part",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "displayNames": [
+          "Lucky Boom"
+        ],
+        "localParts": [
+          "outlet"
+        ],
+        "observedRotatingDomains": [
+          "ravenstone.pro",
+          "buyharbor.me"
+        ],
+        "supportingSignals": [
+          "empty To field, delivered via BCC to a bulk list",
+          "subject uses letter-for-digit stand-ins in money amounts such as €1,25O and 2OO FREE SPINS",
+          "casino lures including free spins, claim bonus, welcome pack, and first deposit bonus"
+        ]
+      },
+      "requiredCombination": "The display name is exactly Lucky Boom and the sender local-part is exactly outlet, on a rotating domain. Observed domains are examples of rotation and are also listed under campaign.repeated-malicious-sender-domain.v1 after repeated observations; a new domain with this display name and local-part still matches this rule.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat a different display name at outlet@, or Lucky Boom at a different local-part, as a match.",
       "privateDataExcluded": true
     }
   ]
