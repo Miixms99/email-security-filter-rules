@@ -35,7 +35,7 @@ never full emails or personal data.
 
 Signal matches carry their severity weight (low 1, medium 2, high 4). A high-severity match, or a combined weight of at least 4, recommends review. No rule classifies a message or performs a mailbox action.
 
-## Rules (revision 2026-11-15.1)
+## Rules (revision 2026-11-15.2)
 
 | Rule | Category | Severity | Evaluated by |
 | --- | --- | --- | --- |
@@ -72,6 +72,9 @@ Signal matches carry their severity weight (low 1, medium 2, high 4). A high-sev
 | `link.visible-href-domain-mismatch.v1` | link | medium | `link_visible_mismatch` |
 | `link.shortener-or-open-redirect.v1` | link | low | assistant review |
 | `link.storage-or-free-host-html.v1` | link | low | `host_html_path` |
+| `social.gambling-casino-lures.v1` | social_engineering | medium | `text_phrases` |
+| `obfuscation.letter-for-digit-amount.v1` | obfuscation | medium | `letter_for_digit_amount` |
+| `campaign.lucky-boom-outlet-sender.v1` | campaign_correlation | high | `display_name_and_local_part` |
 
 A test (`tests/project.test.cjs`) fails if a rule exists in the JSON but is missing from this table.
 
@@ -92,6 +95,12 @@ These are judged from filename extension and MIME type only. Attachments are nev
 - Archives, disk images, scripts and macro documents.
 - Image or PDF attachments with almost no text and no links: QR-code bait ("quishing").
 - Calendar invites (`.ics`) with links to an unrelated domain.
+
+### Content and campaign signals
+
+- **Gambling or casino lures**: promotional phrases such as "free spins", "first deposit bonus", "rakeback" or "welcome pack of". Ordinary invoices and retail cashback without these phrases are counterexamples.
+- **Letter-for-digit amounts**: a lookalike letter used as a digit in a money amount or number token, often only in the subject (`€1,25O`, `2OO`). Highway names such as I-95 are not flagged; I or l count only next to a currency marker.
+- **Lucky Boom / `outlet@`**: the display name "Lucky Boom" with local-part `outlet` on rotating domains (observed: `ravenstone.pro`, `buyharbor.me`). Those domains are also listed on `campaign.repeated-malicious-sender-domain.v1`.
 
 ### Enrichment (optional, network)
 

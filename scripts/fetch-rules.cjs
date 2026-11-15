@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {runtimeRuleSet}=require('./rule-learning.cjs');
 const {validateDocument}=require('./validate-rules.cjs');
-const URL='https://raw.githubusercontent.com/miixmss/email-security-filter-rules/main/rules/filter-rules.json';
+const URL='https://raw.githubusercontent.com/miixms99/email-security-filter-rules/main/rules/filter-rules.json';
 const ROOT=path.resolve(__dirname,'..');
 function toRuleSet(document){
  validateDocument(document,JSON.parse(fs.readFileSync(path.join(ROOT,'rules/filter-rules.schema.json'),'utf8')));

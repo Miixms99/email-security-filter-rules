@@ -1,0 +1,30 @@
+{
+  "id": "cs-nmohijhpojih",
+  "category": "spam",
+  "provider": "outlook",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "outlet@ravenstone.pro",
+  "senderDisplayName": "Lucky Boom",
+  "subject": "- UP TO €1,25O +2OO FREE SPINS",
+  "lureSnippets": [
+    "UP TO €1,250",
+    "+200 FREE SPINS",
+    "CLAIM BONUS",
+    "Deposit just €20 and get €40 to play!",
+    "Start Strong with Your First Deposit Bonus",
+    "Join now and get a Welcome Pack of up to €4,000 + 650 Free Spins! Make a deposit of €20 or more and get a 100% First Deposit Bonus up to €1,250 + 200 Free Spins!",
+    "Up to 15% Cashback & 7% Rakeback"
+  ],
+  "linkHostsAndPaths": [
+    "https://ravenstone.pro/images/[TOKEN]",
+    "https://ravenstone.pro/t"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.lucky-boom-outlet-sender.v1",
+    "campaign.repeated-malicious-sender-domain.v1",
+    "obfuscation.letter-for-digit-amount.v1",
+    "social.gambling-casino-lures.v1"
+  ],
+  "notes": "Lucky Boom casino campaign on rotating domain ravenstone.pro; subject uses letter O as 0 in amounts; To field empty (BCC bulk); links were never opened or fetched"
+}

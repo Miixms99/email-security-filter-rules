@@ -18,7 +18,7 @@ const ENRICH_CACHE = path.join(CACHE_ROOT, 'enrichment-cache.json');
 const HISTORY_FILE = 'contact-history.json';
 const MAX_DOMAINS = 50, TTL = { registration: 7 * 86400000, urlhaus: 6 * 3600000, dbl: 3600000, error: 1800000 };
 const DAY = 86400000;
-const UA = 'email-security-filter-rules/0.5 (+https://github.com/miixmss/email-security-filter-rules)';
+const UA = 'email-security-filter-rules/0.5 (+https://github.com/miixms99/email-security-filter-rules)';
 function fail(message) { throw new Error(message); }
 const DOMAIN_RE = /^(?=.{3,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
