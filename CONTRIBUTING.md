@@ -45,6 +45,15 @@ Rule changes go through pull requests. CI must pass before a pull request is mer
    node scripts/run-tests.cjs
    ```
 
+   After a mailbox check, record aggregate counts (no addresses or subjects) and refresh the public status block:
+
+   ```bash
+   node scripts/stats.cjs --record run.json
+   node scripts/stats.cjs --render
+   ```
+
+   `run.json` is a JSON object with optional `gmail` and `outlook` objects whose fields are non-negative integers (`mailsChecked`, `phishing`, `spam`, `uncertain`, `legitimate`, `sendersBlocked`, `domainsBlocked`, `reportedToProvider`, `movedToTrash`). CI fails if the README block between `<!-- STATS:START -->` and `<!-- STATS:END -->` is out of sync with `stats/stats.json`.
+
 4. Open a pull request. The title must say concretely what changed (for example "Add gambling-lure signal and two corpus samples", not "Update rules").
 5. Wait for CI on Node 20 and 22. A pull request is merged only after the tests pass.
 

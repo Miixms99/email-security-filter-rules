@@ -7,6 +7,31 @@ never full emails or personal data.
 
 *Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes.*
 
+<!-- STATS:START -->
+## Project status
+
+Updated automatically by Grok Bot after every daily spam check. Totals below are aggregate counts only (no addresses, subjects or personal data), since 14 November 2026. Mail-handling figures are lower bounds: only verified, classified mail is included.
+
+![Mails checked](https://img.shields.io/badge/Mails%20checked-29-0a66c2) ![Phishing caught](https://img.shields.io/badge/Phishing%20caught-7-c41e3a) ![Spam removed](https://img.shields.io/badge/Spam%20removed-22-d97706) ![Senders blocked](https://img.shields.io/badge/Senders%20blocked-19-4b5563) ![Domains blocked](https://img.shields.io/badge/Domains%20blocked-4-4b5563) ![Detection rules](https://img.shields.io/badge/Detection%20rules-36-0f766e)
+
+| | Count |
+| --- | ---: |
+| Mails checked | 29 |
+| Phishing caught | 7 |
+| Spam removed | 22 |
+| Senders blocked | 19 |
+| Domains blocked | 4 |
+| Detection rules | 36 |
+| Corpus samples | 19 |
+| Rules revision | 2026-11-15.2 |
+| Last check | 15 November 2026, 13:02 Europe/Amsterdam |
+
+| Provider | Checked | Phishing | Spam | Senders blocked |
+| --- | ---: | ---: | ---: | ---: |
+| Gmail | 15 | 7 | 8 | 15 |
+| Outlook | 14 | 0 | 14 | 4 |
+<!-- STATS:END -->
+
 ## Questions, ideas and problems
 
 Anyone can [open an issue](https://github.com/miixms99/email-security-filter-rules/issues/new/choose) to report a bug, propose an idea or a new detection signal, or ask a question. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first: never paste real email content or personal data.
@@ -29,6 +54,7 @@ Grok Bot reviews every issue and decides what to do: accept it, ask for more inf
 | Plugin | `plugin/` | Assistant instructions (`email-security-review` skill) for the review workflow. |
 | Redaction | `scripts/redact.cjs` | Removes names, addresses, phone numbers, IBAN/card numbers, IDs, long digit runs, times, IPs, street addresses/postcodes, greetings with names, URL queries and tracking tokens, and invisible characters before text may enter the corpus. |
 | Corpus | `corpus/`, `scripts/corpus.cjs` | Redacted phishing/spam/ad samples (`corpus/sample.schema.json`), privacy scan and offline detection evaluation. |
+| Project status | `stats/stats.json`, `scripts/stats.cjs` | Public aggregate counts (mails checked, phishing, spam, blocks) and the README status block. No addresses or personal data. |
 | Tests | `tests/`, `scripts/run-tests.cjs` | Offline, synthetic-only test suite run by CI. |
 
 ### Rule routing
@@ -148,6 +174,9 @@ Requires Node.js 20 or newer and no dependencies. Run from the repository root.
 | Add corpus samples | `node scripts/corpus.cjs --add < raw.json` | `Get-Content raw.json \| node scripts\corpus.cjs --add` |
 | Corpus privacy check | `node scripts/corpus.cjs --check` | `node scripts\corpus.cjs --check` |
 | Corpus detection report | `node scripts/corpus.cjs --evaluate` | `node scripts\corpus.cjs --evaluate` |
+| Record a spam-check run | `node scripts/stats.cjs --record run.json` | `node scripts\stats.cjs --record run.json` |
+| Refresh README status | `node scripts/stats.cjs --render` | `node scripts\stats.cjs --render` |
+| Check README status sync | `node scripts/stats.cjs --render --check` | `node scripts\stats.cjs --render --check` |
 
 Minimal analyzer input using the repository rules:
 
@@ -196,7 +225,7 @@ Storage paths are confined to their directory: no `..` traversal, no symbolic li
 ## Workflow
 
 1. **Daily check.** The assistant reviews Gmail Spam, Outlook Junk and recent inbox mail through the providers' web interfaces using the plugin instructions. Mailbox actions (report, block the exact sender, move to Trash) are taken there and verified one by one.
-2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump. Clear phishing/spam may also be added to `corpus/` as redacted samples.
+2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump. Clear phishing/spam may also be added to `corpus/` as redacted samples. After the check, `node scripts/stats.cjs --record <json>` adds the run's aggregate counts and `--render` refreshes the public [Project status](#project-status) block.
 3. **Pull request.** The changes go on a branch with a pull request whose title states concretely what changed. Nothing is pushed directly to `main`. The only exception is the owner-triggered `publish-rule.yml` workflow, which commits one reviewed campaign candidate after the full test suite passes.
 4. **CI.** `.github/workflows/validate.yml` runs `node scripts/run-tests.cjs` on Node 20 and 22.
 5. **Merge.** The pull request is merged only after CI passes. Clients that fetch `main` see the new rules immediately.
