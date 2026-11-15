@@ -27,3 +27,18 @@ const readme=fs.readFileSync('README.md','utf8');
 assert.ok(readme.includes('revision '+rules.filterRevision),'README names the current filter revision');
 for(const r of rules.rules)assert.ok(readme.includes('`'+r.id+'`'),'README lists '+r.id);
 console.log('Plugin version, skill revision and README rule table are consistent.');
+
+// Self-hosting entry points must stay visible and free of mailbox secrets.
+const gettingStarted = fs.readFileSync('GETTING-STARTED.md', 'utf8');
+assert.ok(readme.includes('Use it for your own mailbox'), 'README has a self-hosting section');
+assert.ok(readme.includes('GETTING-STARTED.md'), 'README links the getting-started guide');
+assert.ok(gettingStarted.includes('node scripts/export-filters.cjs'), 'guide documents filter export');
+assert.ok(gettingStarted.includes('--init-local'), 'guide documents local stats');
+assert.ok(gettingStarted.includes('Kort in het Nederlands'), 'guide includes a short Dutch section');
+assert.equal(fs.existsSync('config/accounts.example.json'), true);
+assert.equal(fs.existsSync('config/accounts.schema.json'), true);
+const gitignore = fs.readFileSync('.gitignore', 'utf8');
+assert.ok(gitignore.includes('config/accounts.json'));
+assert.ok(gitignore.includes('stats/local-stats.json'));
+assert.ok(gitignore.includes('config/private-identifiers.json'));
+console.log('Self-hosting guide, accounts example and gitignore checks passed.');

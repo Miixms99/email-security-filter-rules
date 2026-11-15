@@ -14,3 +14,10 @@ enrichment-cache.json
 
 # Local-only redaction identifiers (never commit)
 config/private-identifiers.json
+
+# Local mailbox list and personal stats (never commit)
+config/accounts.json
+stats/local-stats.json
+
+# Generated filter exports (regenerate with scripts/export-filters.cjs)
+export/
