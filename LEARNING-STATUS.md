@@ -10,6 +10,7 @@
 - Reject a combination when a supplied legitimate counterexample matches it.
 - Preserve Gmail and Outlook provider coverage in candidate summaries.
 - Test rule injection, counterexamples and removal in fresh analyzer processes.
+- Optional network enrichment: RDAP domain age; URLhaus host lookups when `URLHAUS_AUTH_KEY` is set (enabled for the maintained daily check with a key stored outside the repo); Spamhaus DBL only when `SPAMHAUS_DQS_KEY` is set (unused by the maintained project).
 
 ## Boundaries
 

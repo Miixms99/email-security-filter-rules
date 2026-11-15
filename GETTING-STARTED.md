@@ -109,7 +109,7 @@ To use the latest published rules instead of the checkout, merge the `campaignRu
 
 The result is a set of **review signals**, not a verdict and not permission to change the mailbox. A high-severity match, or a combined weight of at least 4, recommends review. You decide what to do.
 
-Optional enrichment (`node scripts/enrich.cjs`) looks up **domain or host names only** (RDAP age always; URLhaus and Spamhaus DBL only if you set your own keys in the environment). Keys never go in files. See the Enrichment section in [README.md](README.md).
+Optional enrichment (`node scripts/enrich.cjs`) looks up **domain or host names only**. RDAP domain age always runs. URLhaus host lookups run when you set your own free abuse.ch Auth-Key as `URLHAUS_AUTH_KEY` (sign in with an email link). Spamhaus DBL is optional and stays inactive without `SPAMHAUS_DQS_KEY`; the maintained project does not use Spamhaus, because a free DQS account requires mail-server attestation. Keys never go in files or in this repository. See the Enrichment section in [README.md](README.md).
 
 ## 4. Apply rules in Gmail (manual)
 
@@ -263,3 +263,4 @@ Je kunt dit hele pakket zelf gebruiken voor je eigen Gmail- en/of Outlook-accoun
 5. Werk regels bij met `git fetch upstream` en `git merge upstream/main` (of Sync fork), of download een nieuwe ZIP.
 6. Houd je eigen tellingen apart: `node scripts/stats.cjs --init-local` schrijft `stats/local-stats.json`. Stuur die cijfers niet terug in een pull request naar het publieke project.
 7. Meld nieuwe signalen via een issue of pull request, zonder persoonsgegevens of echte mailinhoud. Zie [CONTRIBUTING.md](CONTRIBUTING.md).
+8. Optionele verrijking stuurt alleen domein- of hostnamen. Voor URLhaus kun je zelf een gratis abuse.ch Auth-Key aanmaken (inloggen via een e-maillink) en `URLHAUS_AUTH_KEY` zetten. Spamhaus DQS wordt in het onderhouden project niet gebruikt en blijft uit zonder eigen sleutel. Zet sleutels nooit in bestanden of in de repository.
