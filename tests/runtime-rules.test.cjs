@@ -67,4 +67,37 @@ assert.equal(run({fromAddress:'outlet@unrelated-shop.example',displayName:'Shop 
 // I/l stand-ins only count next to a currency marker; highway names are a counterexample.
 assert.ok(run({subject:'Refund of €l00 pending'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='obfuscation.letter-for-digit-amount.v1'));
 assert.equal(run({text:'Traffic update for highway I-95 and route I10'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='obfuscation.letter-for-digit-amount.v1'),false);
+// Hyphen campaign marker and additional parent suffixes (.web.id, .us).
+assert.ok(run({fromAddress:'abcdefg.111-957097@abcdefgh.word.sample.web.id'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'));
+assert.ok(run({fromAddress:'abcdefg.111-957097@abcdefgh.word.sample.my.id'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'));
+assert.ok(run({fromAddress:'abcdefg.111.957097@abcdefgh.word.sample.us'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.rotating-marker-sender-pattern.v1'));
+assert.equal(run({fromAddress:'abcdefg.111-957097@abcdefgh.word.sample.com'}).messages[0].configuredSenderMatches.length,0,'hyphen marker still requires a configured suffix');
+// Lucky Boom local-part variant and newly observed rotating domains.
+const luckyVariant=run({fromAddress:'appliancebillow@campaignharbor.info',displayName:'Lucky Boom',subject:'+2OO FREE SPINS'});
+assert.ok(luckyVariant.messages[0].configuredSignalMatches.some(m=>m.ruleId==='campaign.lucky-boom-outlet-sender.v1'));
+assert.ok(luckyVariant.messages[0].configuredSenderMatches.some(m=>m.ruleId==='campaign.repeated-malicious-sender-domain.v1'&&m.domain==='campaignharbor.info'));
+assert.ok(run({fromAddress:'outlet@northforge.rent',displayName:'Lucky Boom'}).messages[0].configuredSenderMatches.some(m=>m.domain==='northforge.rent'));
+// Hyphen-leading domain labels and 8-character local-part plus 28-32 character .com domain.
+assert.ok(run({fromAddress:'info@-----mail.samplehost.com'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='obfuscation.hyphen-leading-domain-label.v1'));
+assert.ok(run({fromAddress:'ab12cd34@---abcdefghijklmnopqrstuvwxyz12abcd.com'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='obfuscation.hyphen-leading-domain-label.v1'));
+const randomShape=run({fromAddress:'ab12cd34@abcdefghijklmnopqrstuvwxyz12.com'});
+assert.ok(randomShape.messages[0].configuredSenderMatches.some(m=>m.ruleId==='obfuscation.random-alnum-sender-shape.v1'));
+assert.equal(run({fromAddress:'ab12cd34@shortname.com'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='obfuscation.random-alnum-sender-shape.v1'),false);
+assert.equal(run({fromAddress:'info@mail.samplehost.com'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='obfuscation.hyphen-leading-domain-label.v1'),false);
+// Retailer brand as local-part on an unrelated domain; genuine brand newsletters are counterexamples.
+assert.ok(run({fromAddress:'walmart@thecuntionter.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.retailer-brand-local-part.v1'));
+assert.ok(run({fromAddress:'bestbuy@ydezdlh.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.retailer-brand-local-part.v1'));
+assert.ok(run({fromAddress:'samsclub@canderation.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.retailer-brand-local-part.v1'));
+assert.ok(run({fromAddress:'costco@randomretailer.test'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.retailer-brand-local-part.v1'));
+assert.equal(run({fromAddress:'newsletter@walmart.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.retailer-brand-local-part.v1'),false,'genuine newsletter local-part is not a match');
+assert.equal(run({fromAddress:'walmart@mail.walmart.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.retailer-brand-local-part.v1'),false,'brand local-part at the genuine domain is not a match');
+// Casino: spinkong-vip local-part on a hyphen-leading bonuses domain.
+const spin=run({fromAddress:'spinkong-vip-offer@--spinkong-vip-bonuses.com'});
+assert.ok(spin.messages[0].configuredSenderMatches.some(m=>m.ruleId==='social.spinkong-vip-sender.v1'));
+assert.ok(spin.messages[0].configuredSenderMatches.some(m=>m.ruleId==='obfuscation.hyphen-leading-domain-label.v1'));
+assert.equal(run({fromAddress:'newsletter@spinkong-news.com'}).messages[0].configuredSenderMatches.some(m=>m.ruleId==='social.spinkong-vip-sender.v1'),false);
+// Dutch CJIB impersonation on an unrelated domain; genuine cjib.nl is a counterexample.
+assert.ok(run({fromAddress:'Cjib-nietantwoorden-referentie-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee@casi-app.com'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.cjib-impersonation-unrelated-domain.v1'));
+assert.ok(run({fromAddress:'cjib-nietantwoorden-referentie-abcdef012345@renegades.sk'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.cjib-impersonation-unrelated-domain.v1'));
+assert.equal(run({fromAddress:'cjib-nietantwoorden-referentie-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee@mail.cjib.nl'}).messages[0].configuredSignalMatches.some(m=>m.ruleId==='identity.cjib-impersonation-unrelated-domain.v1'),false);
 console.log('Real rule document: routing, runtime load, sender/auth/provider/Unicode/casino rules and CLI --analyze passed.');

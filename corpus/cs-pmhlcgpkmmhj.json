@@ -25,7 +25,8 @@
   "matchedRuleIds": [
     "campaign.marker-and-path.v1",
     "campaign.repeated-malicious-sender-domain.v1",
-    "link.storage-or-free-host-html.v1"
+    "link.storage-or-free-host-html.v1",
+    "campaign.rotating-marker-sender-pattern.v1"
   ],
   "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); rotating campaign sender <7 letters>.111.957097@<random>.<word>.<domain>; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",
   "redactionApplied": [

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "filterRevision": "2026-11-15.2",
-  "generatedAt": "2026-11-15T13:00:00+01:00",
+  "filterRevision": "2026-11-15.3",
+  "generatedAt": "2026-11-15T13:26:00+01:00",
   "privacy": {
     "publicRepository": true,
     "privateDataAllowed": false,
@@ -46,7 +46,8 @@
       "weight": 4,
       "indicators": {
         "markers": [
-          "111.957097"
+          "111.957097",
+          "111-957097"
         ],
         "urlParameters": [
           {
@@ -66,8 +67,8 @@
           "/hmdbox/hmd-v1-cl3.html"
         ],
         "supportingSignals": [
-          "sender local-part is seven random lowercase letters followed by a configured campaign marker",
-          "sender domain is an eight-letter random lowercase label, then a word label, then a rotating parent domain on a .biz, .biz.id, or .my.id public suffix",
+          "sender local-part is seven random lowercase letters followed by a configured campaign marker (111.957097 or the hyphen variant 111-957097)",
+          "sender domain is an eight-letter random lowercase label, then a word label, then a rotating parent domain on a .biz, .biz.id, .my.id, .web.id, or .us public suffix",
           "display name spoofs a well-known brand or support-team role, such as a Gmail support-team style label, that does not match the sender domain",
           "health-spam lures such as stop-taking-drug claims for ED, blood-pressure, or prostate products, or a fake celebrity or television-network medical endorsement including Dr. Oz or CBS style claims",
           "provider mailed-by or similar trust label such as Trusted Sender that does not match the sender domain",
@@ -94,14 +95,16 @@
       "weight": 4,
       "indicators": {
         "senderAddressPatterns": [
-          "local-part: seven random lowercase ASCII letters, then a dot, then a configured campaign marker such as 111.957097",
-          "domain: eight random lowercase ASCII letters, then a word label, then a rotating parent domain",
+          "local-part: seven random lowercase ASCII letters, then a dot, then a configured campaign marker such as 111.957097 or the hyphen variant 111-957097",
+          "domain: eight random lowercase ASCII letters, then a word label, then a rotating parent domain on .biz, .biz.id, .my.id, .web.id, or .us",
           "variant: local-part exactly 'nooreply' (misspelled no-reply) at a random 9-11 lowercase-letter domain directly under .us, with health-product or cloud-storage-deletion display names; links carry sq=111-957097"
         ],
         "parentDomainSuffixes": [
           ".biz",
           ".biz.id",
-          ".my.id"
+          ".my.id",
+          ".web.id",
+          ".us"
         ],
         "observedRotatingParentDomains": [
           "mehidjugi.biz",
@@ -117,15 +120,15 @@
           "subscription-termination Final Warning lure with a fabricated account identifier"
         ],
         "senderAddressRegex": {
-          "localPart": "^[a-z]{7}\\.111\\.957097$",
-          "domain": "^[a-z]{8}\\.[a-z]{2,24}\\.[a-z0-9-]{2,40}\\.(biz|biz\\.id|my\\.id)$"
+          "localPart": "^[a-z]{7}\\.111[.-]957097$",
+          "domain": "^[a-z]{8}\\.[a-z]{2,24}\\.[a-z0-9-]{2,40}\\.(biz|biz\\.id|my\\.id|web\\.id|us)$"
         },
         "variantSenderAddressRegex": {
           "localPart": "^nooreply$",
           "domain": "^[a-z]{9,11}\\.us$"
         }
       },
-      "requiredCombination": "The sender address matches the configured local-part and rotating-domain pattern and contains a configured campaign marker. Supporting lure, display-name, and mailed-by signals raise review priority but are not required. Observed parent domains are examples of rotation only and must never be added as domain blocks from a single message per domain.",
+      "requiredCombination": "The sender address matches the configured local-part and rotating-domain pattern and contains a configured campaign marker (dot or hyphen form). Supporting lure, display-name, and mailed-by signals raise review priority but are not required. Observed parent domains are examples of rotation only and must never be added as domain blocks from a single message per domain.",
       "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not promote observed rotating parent domains into campaign.repeated-malicious-sender-domain.v1 without repeated observations and a legitimate-counterexample review.",
       "privateDataExcluded": true
     },
@@ -162,7 +165,17 @@
           "cloudtivo2.biz",
           "belilalune.web.id",
           "ravenstone.pro",
-          "buyharbor.me"
+          "buyharbor.me",
+          "campaignharbor.info",
+          "inboxcurrent.xyz",
+          "lemonriver.xyz",
+          "mailhorizon.info",
+          "radiocedar.xyz",
+          "radiogarden.shop",
+          "reachvertex.info",
+          "spoteos.info",
+          "yourinstantoffers.info",
+          "northforge.rent"
         ]
       },
       "requiredCombination": "The exact sender registered domain matches a listed domain that had repeated campaign observations and no legitimate counterexample in reviewed mailboxes. Shared or public-infrastructure domains must never be listed here.",
@@ -871,6 +884,9 @@
         "counterexamples": [
           "ordinary retail cashback or credit-card rewards without gambling phrases",
           "news coverage that mentions a casino without a promotional lure"
+        ],
+        "supportingSignals": [
+          "a sender local-part and hyphen-leading domain using a gambling-brand plus vip or bonuses tokens, as in social.spinkong-vip-sender.v1"
         ]
       },
       "requiredCombination": "At least one configured gambling or casino promotional phrase is present in the subject or body. An ordinary invoice, receipt, or retail cashback message without these phrases is a counterexample.",
@@ -921,11 +937,22 @@
           "Lucky Boom"
         ],
         "localParts": [
-          "outlet"
+          "outlet",
+          "appliancebillow"
         ],
         "observedRotatingDomains": [
           "ravenstone.pro",
-          "buyharbor.me"
+          "buyharbor.me",
+          "campaignharbor.info",
+          "inboxcurrent.xyz",
+          "lemonriver.xyz",
+          "mailhorizon.info",
+          "radiocedar.xyz",
+          "radiogarden.shop",
+          "reachvertex.info",
+          "spoteos.info",
+          "yourinstantoffers.info",
+          "northforge.rent"
         ],
         "supportingSignals": [
           "empty To field, delivered via BCC to a bulk list",
@@ -933,8 +960,159 @@
           "casino lures including free spins, claim bonus, welcome pack, and first deposit bonus"
         ]
       },
-      "requiredCombination": "The display name is exactly Lucky Boom and the sender local-part is exactly outlet, on a rotating domain. Observed domains are examples of rotation and are also listed under campaign.repeated-malicious-sender-domain.v1 after repeated observations; a new domain with this display name and local-part still matches this rule.",
-      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat a different display name at outlet@, or Lucky Boom at a different local-part, as a match.",
+      "requiredCombination": "The display name is exactly Lucky Boom and the sender local-part is exactly outlet or appliancebillow, on a rotating domain. Observed domains are examples of rotation and are also listed under campaign.repeated-malicious-sender-domain.v1 after repeated observations; a new domain with this display name and local-part still matches this rule.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat a different display name at outlet@ or appliancebillow@, or Lucky Boom at a different local-part, as a match.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "obfuscation.hyphen-leading-domain-label.v1",
+      "status": "signal_only",
+      "category": "obfuscation",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "senderAddressPatterns": [
+          "a sender domain label begins with one or more hyphen characters, which is not a valid ordinary DNS label",
+          "examples of the shape: a hyphen-padded mail label under a random .com parent, or a label of leading hyphens plus a long random alphanumeric string under .com"
+        ],
+        "senderAddressRegex": {
+          "localPart": "^[a-z0-9.+-]{1,64}$",
+          "domain": "^-+[a-z0-9.-]*\\.[a-z]{2,24}$"
+        }
+      },
+      "requiredCombination": "The sender domain has a label that starts with one or more hyphens. A normal domain whose labels start with a letter or digit is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Listing this shape is not an automatic mailbox block.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "obfuscation.random-alnum-sender-shape.v1",
+      "status": "signal_only",
+      "category": "obfuscation",
+      "severity": "medium",
+      "weight": 2,
+      "indicators": {
+        "senderAddressPatterns": [
+          "local-part is exactly eight random alphanumeric characters",
+          "registrable domain is a single 28-to-32-character random alphanumeric label under .com"
+        ],
+        "senderAddressRegex": {
+          "localPart": "^[a-z0-9]{8}$",
+          "domain": "^[a-z0-9]{28,32}\\.com$"
+        }
+      },
+      "requiredCombination": "The sender local-part is eight alphanumeric characters and the sender domain is a single 28-to-32-character alphanumeric label under .com. A short ordinary .com domain, or a local-part of any other length, is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.retailer-brand-local-part.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "evaluator": "impersonation_local_part_unrelated_domain",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "localParts": [
+          "walmart",
+          "wal-mart",
+          "bestbuy",
+          "best-buy",
+          "samsclub",
+          "sams-club",
+          "sams_club",
+          "costco",
+          "costco-wholesale"
+        ],
+        "genuineDomains": [
+          "walmart.com",
+          "wal-mart.com",
+          "walmart.ca",
+          "walmart.com.mx",
+          "bestbuy.com",
+          "bestbuy.ca",
+          "samsclub.com",
+          "samsclub.ca",
+          "costco.com",
+          "costco.ca",
+          "costco.com.mx",
+          "costco.co.uk",
+          "costco.com.au"
+        ],
+        "observedUnrelatedDomains": [
+          "thecuntionter.com",
+          "ydezdlh.com",
+          "canderation.com"
+        ],
+        "supportingSignals": [
+          "the local-part is a well-known retailer brand while the registrable sender domain is not that brand's official domain",
+          "lookalike or random sender domains used with a retailer local-part"
+        ],
+        "counterexamples": [
+          "a newsletter or transactional message whose local-part is not the brand (for example newsletter at the genuine brand domain)",
+          "a message from the brand local-part at the brand's own genuine domain or a subdomain of it"
+        ]
+      },
+      "requiredCombination": "The sender local-part is a listed retailer brand token, and the sender's registrable domain is not that brand's genuine domain or a subdomain of it. A genuine brand-domain newsletter whose local-part is not the brand token is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat mail from the genuine brand domains as a match.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "social.spinkong-vip-sender.v1",
+      "status": "signal_only",
+      "category": "social_engineering",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "brand": "spinkong",
+        "tokens": [
+          "vip",
+          "bonuses"
+        ],
+        "senderAddressPatterns": [
+          "local-part starts with the gambling brand token spinkong, then vip, then a further campaign token",
+          "sender domain begins with one or more hyphens and is a single-purpose bonuses or vip label under a generic TLD"
+        ],
+        "senderAddressRegex": {
+          "localPart": "^spinkong[-.]vip[-.][a-z0-9-]{1,40}$",
+          "domain": "^-+[a-z0-9.-]+\\.[a-z]{2,24}$"
+        },
+        "supportingSignals": [
+          "hyphen-leading domain labels (see obfuscation.hyphen-leading-domain-label.v1)",
+          "casino promotional phrases covered by social.gambling-casino-lures.v1"
+        ]
+      },
+      "requiredCombination": "The sender local-part matches the spinkong-vip- token shape and the sender domain starts with one or more hyphens. A message from a normal domain, or a local-part without the spinkong and vip tokens, is a counterexample.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. The maintained mailbox treats unsolicited gambling promotion as unwanted mail, but this rule still does not authorize an automatic mailbox action.",
+      "privateDataExcluded": true
+    },
+    {
+      "id": "identity.cjib-impersonation-unrelated-domain.v1",
+      "status": "signal_only",
+      "category": "identity",
+      "evaluator": "impersonation_local_part_unrelated_domain",
+      "severity": "high",
+      "weight": 4,
+      "indicators": {
+        "localPartPrefixes": [
+          "cjib-nietantwoorden-referentie-"
+        ],
+        "genuineDomains": [
+          "cjib.nl"
+        ],
+        "observedUnrelatedDomains": [
+          "casi-app.com",
+          "renegades.sk"
+        ],
+        "supportingSignals": [
+          "Dutch government fine-collection (CJIB) branding in the local-part, including a niet-antwoorden (do-not-reply) token and a referentie plus identifier",
+          "sender domain is not cjib.nl or a subdomain of it"
+        ],
+        "counterexamples": [
+          "mail from cjib.nl or a subdomain of cjib.nl, regardless of local-part"
+        ]
+      },
+      "requiredCombination": "The sender local-part starts with the CJIB do-not-reply reference prefix, and the sender's registrable domain is not cjib.nl or a subdomain of it.",
+      "verdictEffect": "Send for review only; never classify or act from this rule alone. Do not treat mail from the genuine cjib.nl domain as a match.",
       "privateDataExcluded": true
     }
   ]
