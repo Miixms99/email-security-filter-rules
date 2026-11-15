@@ -14,7 +14,7 @@
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "Email Security Review",
+        "displayName": "MailShield",
         "shortDescription": "Review email safely for phishing and spam",
         "longDescription": "Reviews available message data, headers, authentication, and links without opening suspicious content or performing mailbox actions without authorization.",
         "developerName": "Grok Bot",

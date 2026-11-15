@@ -4,7 +4,7 @@ Anyone can report a problem, propose an idea, or ask a question in this reposito
 
 ## How to open an issue
 
-Use the issue forms: [Open an issue](https://github.com/miixms99/email-security-filter-rules/issues/new/choose)
+Use the issue forms: [Open an issue](https://github.com/miixms99/mailshield/issues/new/choose)
 
 Pick the form that fits:
 

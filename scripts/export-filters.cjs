@@ -156,7 +156,7 @@ function buildGmailXml(signals, options = {}) {
 
   const xml = [
     "<?xml version='1.0' encoding='UTF-8'?>",
-    "<!-- Optional, reviewable Gmail filters generated from Email Security Filter Rules",
+    "<!-- Optional, reviewable Gmail filters generated from MailShield",
     `     revision ${revision}. Review every filter before importing. These signals are`,
     '     not proof of malice and do not authorize unreviewed mailbox actions.',
     '     Shared infrastructure hosts are never included. This file contains no',
@@ -166,7 +166,7 @@ function buildGmailXml(signals, options = {}) {
     `  <id>tag:mail.google.com,2008:filters:esf:${xmlEscape(revision)}</id>`,
     `  <updated>${xmlEscape(updated)}</updated>`,
     '  <author>',
-    '    <name>Email Security Filter Rules</name>',
+    '    <name>MailShield</name>',
     '    <email>filters@example.com</email>',
     '  </author>',
     ...entries,
@@ -180,7 +180,7 @@ function buildGmailXml(signals, options = {}) {
 function buildOutlookText(signals) {
   const revision = signals.filterRevision || 'unknown';
   const lines = [
-    '# Email Security Filter Rules — optional Outlook blocked-senders and rule suggestions',
+    '# MailShield — optional Outlook blocked-senders and rule suggestions',
     `# Rules revision: ${revision}`,
     '# REVIEW every entry before adding it. These are signals, not automatic proof.',
     '# This file contains no personal addresses. Shared infrastructure is not listed.',
@@ -236,7 +236,7 @@ function buildManifest(signals, extras = {}) {
 function buildReviewNotes(signals) {
   const revision = signals.filterRevision || 'unknown';
   const lines = [
-    `Email Security Filter Rules ${revision} — filter export review notes`,
+    `MailShield ${revision} — filter export review notes`,
     '',
     'This export is optional. Review every entry before you import or add it.',
     'The analyzer and this script never sign in to a mailbox and never apply',

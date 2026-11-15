@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/miixms99/email-security-filter-rules/config/accounts.schema.json",
+  "$id": "https://github.com/miixms99/mailshield/config/accounts.schema.json",
   "title": "Local mailbox account list",
   "description": "Local-only list of Gmail and Outlook mailboxes you manage with this package. No passwords, tokens, addresses or other secrets. The real file config/accounts.json is gitignored.",
   "type": "object",
