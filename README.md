@@ -1,11 +1,25 @@
 # Email Security Filter Rules
 
-Signal-only phishing and spam detection rules plus a local, observe-only analyzer for
-a personal Gmail and Outlook setup. The repository is public: it holds abstracted
-signals and a small redacted corpus of clear phishing/spam excerpts (see [Corpus](#corpus)),
-never full emails or personal data.
+Signal-only phishing and spam detection rules plus a local, observe-only analyzer
+that you can use with your own Gmail and Outlook accounts (one or several). The
+repository is public: it holds abstracted signals and a small redacted corpus of
+clear phishing/spam excerpts (see [Corpus](#corpus)), never full emails or personal data.
 
 *Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes.*
+
+## Use it for your own mailbox
+
+You can run this whole package against your own Gmail and/or Outlook account, or
+several accounts, without a mail server and without external storage. Nothing in
+this repository logs into a mailbox or stores mail off your machine. You review
+messages, run the analyzer on headers and signals, and apply filters or blocks
+yourself.
+
+The [Getting started / self-hosting guide](GETTING-STARTED.md) covers install,
+multi-account config, analyzing a message, step-by-step Gmail and Outlook
+filters, an optional filter-export file, keeping rules up to date from upstream,
+keeping your own stats separate, and contributing signals without personal data.
+A short Dutch summary is at the end of that guide.
 
 <!-- STATS:START -->
 ## Project status
@@ -54,7 +68,9 @@ Grok Bot reviews every issue and decides what to do: accept it, ask for more inf
 | Plugin | `plugin/` | Assistant instructions (`email-security-review` skill) for the review workflow. |
 | Redaction | `scripts/redact.cjs` | Removes names, addresses, phone numbers, IBAN/card numbers, IDs, long digit runs, times, IPs, street addresses/postcodes, greetings with names, URL queries and tracking tokens, and invisible characters before text may enter the corpus. |
 | Corpus | `corpus/`, `scripts/corpus.cjs` | Redacted phishing/spam/ad samples (`corpus/sample.schema.json`), privacy scan and offline detection evaluation. |
-| Project status | `stats/stats.json`, `scripts/stats.cjs` | Public aggregate counts (mails checked, phishing, spam, blocks) and the README status block. No addresses or personal data. |
+| Project status | `stats/stats.json`, `scripts/stats.cjs` | Public aggregate counts (mails checked, phishing, spam, blocks) and the README status block. No addresses or personal data. Self-hosters keep their own counts in the gitignored `stats/local-stats.json` (`--init-local`). |
+| Self-hosting | `GETTING-STARTED.md`, `config/accounts.example.json`, `scripts/accounts.cjs` | Guide and optional local mailbox list (labels and providers only; the real `config/accounts.json` is gitignored). |
+| Filter export | `scripts/export-filters.cjs` | Optional, reviewable Gmail `mailFilters.xml` and Outlook blocked-senders list from current domain and marker signals. Nothing is applied automatically. |
 | Tests | `tests/`, `scripts/run-tests.cjs` | Offline, synthetic-only test suite run by CI. |
 
 ### Rule routing
@@ -156,7 +172,7 @@ These are judged from filename extension and MIME type only. Attachments are nev
 | [Spamhaus DBL](https://www.spamhaus.com/data-access/) via DQS | Sender or link domain listed (`127.0.1.x`) | `SPAMHAUS_DQS_KEY` | inactive |
 | First-contact history | Unknown sender domain claiming a brand | `EMAILCONTROL_DATA_DIR` | inactive |
 
-- **Spamhaus:** there is currently no DQS account (a free account requires your own mail server), so `domain.spamhaus-dbl.v1` stays inactive until `SPAMHAUS_DQS_KEY` is set. Answers in `127.255.255.x` (public resolver, typo, rate limit) are treated as errors and never as listings. The public `dbl.spamhaus.org` zone is not used, because it refuses public resolvers.
+- **Spamhaus:** a free DQS account requires your own mail server, so `domain.spamhaus-dbl.v1` stays inactive until you set `SPAMHAUS_DQS_KEY`. Answers in `127.255.255.x` (public resolver, typo, rate limit) are treated as errors and never as listings. The public `dbl.spamhaus.org` zone is not used, because it refuses public resolvers.
 - **URLhaus:** abuse.ch now requires a free Auth-Key even for the community API, so `link.urlhaus-listed.v1` stays inactive without `URLHAUS_AUTH_KEY`.
 - **First contact:** `contact-history.json` contains only HMAC-SHA256 hashes of organizational sender domains, salted with a random local salt. It is written only when the input sets `"recordContacts": true`. Seed it from known legitimate mail first; with an empty history every sender counts as a first contact.
 - **Keys:** keys are read from environment variables only and are never written to files, caches or output. Lookups are cached in `enrichment-cache.json` in the cache directory (registration data 7 days, URLhaus 6 hours, DBL 1 hour, errors 30 minutes). `--offline` uses the cache only.
@@ -188,6 +204,10 @@ Requires Node.js 20 or newer and no dependencies. Run from the repository root.
 | Record a spam-check run | `node scripts/stats.cjs --record run.json` | `node scripts\stats.cjs --record run.json` |
 | Refresh README status | `node scripts/stats.cjs --render` | `node scripts\stats.cjs --render` |
 | Check README status sync | `node scripts/stats.cjs --render --check` | `node scripts\stats.cjs --render --check` |
+| Init local (private) stats | `node scripts/stats.cjs --init-local` | `node scripts\stats.cjs --init-local` |
+| Record to a local stats file | `node scripts/stats.cjs --file stats/local-stats.json --record run.json --no-render` | `node scripts\stats.cjs --file stats\local-stats.json --record run.json --no-render` |
+| Validate / list local accounts | `node scripts/accounts.cjs --check` / `--list` | `node scripts\accounts.cjs --check` / `--list` |
+| Export optional Gmail/Outlook filters | `node scripts/export-filters.cjs --out-dir export` | `node scripts\export-filters.cjs --out-dir export` |
 
 Minimal analyzer input using the repository rules:
 
@@ -210,6 +230,14 @@ To use the central rules instead, merge the `campaignRules`, `senderRules` and `
 
 Storage paths are confined to their directory: no `..` traversal, no symbolic links or junctions, and a realpath containment check.
 
+Local, gitignored configuration (never commit these, and never put secrets in them):
+
+| File | Purpose |
+| --- | --- |
+| `config/accounts.json` | Optional list of Gmail and Outlook mailboxes you manage (labels and providers only). Copy `config/accounts.example.json`. |
+| `config/private-identifiers.json` | Optional names and addresses used only for local redaction and privacy tests. Copy `config/private-identifiers.example.json`. |
+| `stats/local-stats.json` | Optional personal aggregate counts. Create with `node scripts/stats.cjs --init-local`. |
+
 ## Privacy and safety policy
 
 - Signal-only: rules give review signals, never proof, verdicts or permission for mailbox actions (`automaticMailboxActions: false`).
@@ -221,23 +249,25 @@ Storage paths are confined to their directory: no `..` traversal, no symbolic li
 
 ## Corpus
 
-**Purpose.** `corpus/` holds short, redacted excerpts of clear phishing, spam and unwanted ads seen in the maintained mailboxes. It shows how lures are phrased and built (brand spoofing, urgency, fake account details, hash-buster filler, invisible preheader padding, campaign link paths), and it is a regression set: `tests/corpus-detection.test.cjs` re-runs the analyzer on every sample and fails if a recorded rule match disappears. `node scripts/corpus.cjs --evaluate` prints the detection rate per category.
+**Purpose.** `corpus/` holds short, redacted excerpts of clear phishing, spam and unwanted ads seen in reviewed mailboxes. It shows how lures are phrased and built (brand spoofing, urgency, fake account details, hash-buster filler, invisible preheader padding, campaign link paths), and it is a regression set: `tests/corpus-detection.test.cjs` re-runs the analyzer on every sample and fails if a recorded rule match disappears. `node scripts/corpus.cjs --evaluate` prints the detection rate per category.
 
 **Sample format** (`corpus/sample.schema.json`, one JSON file per sample): random `id`, `category` (`phishing` / `spam` / `ad`), `provider` (`gmail` / `outlook`), `receivedDate` (date only), the spammer's or advertiser's own `senderAddress`, redacted `senderDisplayName` and `subject`, `lureSnippets` (redacted, about 600 characters in total), `linkHostsAndPaths` (scheme, host and path only), `attachmentTypes`, `matchedRuleIds` (offline analyzer result when added), `notes` and the names of the `redactionApplied` categories. Full bodies, headers with recipient data, message IDs and exact times are never stored.
 
-**Redaction** (`scripts/redact.cjs`) replaces, in this order: invisible/zero-width characters (removed and counted), URL queries, fragments and opaque tracking path segments (`[TOKEN]`), every email address except the sender's own (`[EMAIL]`, also percent-encoded forms), the owner's names and handles (`[NAME]`), greetings with a name (`Hi [NAME],`), exact times (`[TIME]`), IP addresses (`[IP]`), IBANs (`[IBAN]`), Luhn-valid card numbers (`[CARD]`), phone numbers (`[PHONE]`), street addresses and postcodes (`[ADDRESS]`, `[POSTCODE]`), labelled account/order/reference IDs, mixed alphanumeric IDs and digit runs of six or more (`[ID]`), and long random tokens (`[TOKEN]`). Campaign markers such as `111.957097` are public indicators and are kept.
+**Redaction** (`scripts/redact.cjs`) replaces, in this order: invisible/zero-width characters (removed and counted), URL queries, fragments and opaque tracking path segments (`[TOKEN]`), every email address except the sender's own (`[EMAIL]`, also percent-encoded forms), names and handles from `config/private-identifiers.json` (`[NAME]`), greetings with a name (`Hi [NAME],`), exact times (`[TIME]`), IP addresses (`[IP]`), IBANs (`[IBAN]`), Luhn-valid card numbers (`[CARD]`), phone numbers (`[PHONE]`), street addresses and postcodes (`[ADDRESS]`, `[POSTCODE]`), labelled account/order/reference IDs, mixed alphanumeric IDs and digit runs of six or more (`[ID]`), and long random tokens (`[TOKEN]`). Campaign markers such as `111.957097` are public indicators and are kept.
 
-**Owner identifiers** live only in the local, gitignored `config/private-identifiers.json` (format: `config/private-identifiers.example.json`). Adding samples requires that file; it is never committed or included in exports.
+**Private identifiers** live only in the local, gitignored `config/private-identifiers.json` (format: `config/private-identifiers.example.json`). Adding samples requires that file; it is never committed or included in exports. Each person who adds samples uses their own copy.
 
 **How to add samples.** Read the message through the mailbox connector, select a few lure sentences in memory, and pipe a raw object (`category, provider, receivedDate, senderAddress, senderDisplayName, subject, lureSnippets[], links[], attachmentTypes[], notes`) into `node scripts/corpus.cjs --add`. The script redacts every field, evaluates the sample, runs the privacy scan and refuses to write a sample with findings. Then review each new file by hand, run `node scripts/run-tests.cjs`, and open a pull request. Only clearly malicious or unwanted mail is eligible; never personal or business correspondence. Links and attachments are never opened.
 
-**Privacy guarantees.** `tests/corpus-privacy.test.cjs` validates every sample against the schema and fails on any email address other than `senderAddress`, phone numbers, digit runs of six or more (other than the campaign marker), query strings or fragments, IP addresses, IBAN-like strings or message IDs. This generic check runs everywhere, including CI. When `config/private-identifiers.json` is present locally, the test also fails if any owner name or address appears anywhere in the corpus.
+**Privacy guarantees.** `tests/corpus-privacy.test.cjs` validates every sample against the schema and fails on any email address other than `senderAddress`, phone numbers, digit runs of six or more (other than the campaign marker), query strings or fragments, IP addresses, IBAN-like strings or message IDs. This generic check runs everywhere, including CI. When `config/private-identifiers.json` is present locally, the test also fails if any of those names or addresses appears anywhere in the corpus.
 
 ## Workflow
 
-1. **Daily check.** The assistant reviews Gmail Spam, Outlook Junk and recent inbox mail through the providers' web interfaces using the plugin instructions. Mailbox actions (report, block the exact sender, move to Trash) are taken there and verified one by one.
-2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump. Clear phishing/spam may also be added to `corpus/` as redacted samples. After the check, `node scripts/stats.cjs --record <json>` adds the run's aggregate counts and `--render` refreshes the public [Project status](#project-status) block.
-3. **Pull request.** The changes go on a branch with a pull request whose title states concretely what changed. Nothing is pushed directly to `main`. The only exception is the owner-triggered `publish-rule.yml` workflow, which commits one reviewed campaign candidate after the full test suite passes.
+To use the package on your own mailboxes, follow [GETTING-STARTED.md](GETTING-STARTED.md). The steps below are how this public repository itself is maintained.
+
+1. **Daily check.** The maintaining assistant reviews configured Gmail Spam, Outlook Junk and recent inbox mail through the providers' web interfaces using the plugin instructions. Mailbox actions (report, block the exact sender, move to Trash) are taken there and verified one by one, and only when the mailbox owner has authorized them.
+2. **Signals.** New, abstracted signals (domains, markers, paths, patterns; no content) are added to `rules/filter-rules.json` with a `filterRevision` bump. Clear phishing/spam may also be added to `corpus/` as redacted samples. After the check, `node scripts/stats.cjs --record <json>` adds the run's aggregate counts and `--render` refreshes the public [Project status](#project-status) block. Personal clones should record into `stats/local-stats.json` instead, so they do not overwrite this public block.
+3. **Pull request.** The changes go on a branch with a pull request whose title states concretely what changed. Nothing is pushed directly to `main`. The only exception is the repository-owner-triggered `publish-rule.yml` workflow, which commits one reviewed campaign candidate after the full test suite passes.
 4. **CI.** `.github/workflows/validate.yml` runs `node scripts/run-tests.cjs` on Node 20 and 22.
 5. **Merge.** The pull request is merged only after CI passes. Clients that fetch `main` see the new rules immediately.
 

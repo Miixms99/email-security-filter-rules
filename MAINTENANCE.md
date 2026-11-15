@@ -12,7 +12,7 @@
 - Change the plugin code version only when executable behavior, the plugin interface, or plugin instructions materially change.
 - For rule-only changes, keep the code version and increment `filterRevision`; also update the skill's `Bundled filter revision` line and the README rule table (tests enforce both).
 - Every accepted rule update must be a separate commit whose title states concretely what changed (no generic "Rules <revision>" titles). The same applies to pull-request titles.
-- Keep all repository content in English.
+- Keep all repository content in English. The one exception is the short Dutch summary at the end of `GETTING-STARTED.md`.
 
 ## Publication
 
@@ -26,7 +26,7 @@ Run the full offline suite from the repository root:
 node scripts/run-tests.cjs
 ```
 
-This syntax-checks every `scripts/*.cjs` and `tests/*.cjs` file, validates `rules/filter-rules.json` against `rules/filter-rules.schema.json` (policy flags, unique rule IDs, a conservative private-data scan, severity/weight consistency, and a runtime-load check that routes every enabled rule through `runtimeRuleSet()` and the analyzer normalizers), then runs the synthetic analyzer self-test (which loads the real campaign rules), evaluation, and all test files, and checks that the README project status block matches `stats/stats.json`. Shared synthetic fixtures live in `tests/helpers/` and are not run as tests.
+This syntax-checks every `scripts/*.cjs` and `tests/*.cjs` file (including `scripts/accounts.cjs` and `scripts/export-filters.cjs`), validates `rules/filter-rules.json` against `rules/filter-rules.schema.json` (policy flags, unique rule IDs, a conservative private-data scan, severity/weight consistency, and a runtime-load check that routes every enabled rule through `runtimeRuleSet()` and the analyzer normalizers), then runs the synthetic analyzer self-test (which loads the real campaign rules), evaluation, and all test files, and checks that the README project status block matches `stats/stats.json`. Shared synthetic fixtures live in `tests/helpers/` and are not run as tests.
 
 Public handling totals live in `stats/stats.json` (schema `stats/stats.schema.json`). After each mailbox check, record the run and refresh the README section:
 
@@ -35,7 +35,7 @@ node scripts/stats.cjs --record run.json
 node scripts/stats.cjs --render
 ```
 
-Counts are aggregates only: never put addresses, subjects or personal data in `stats/stats.json` or the README block.
+Counts are aggregates only: never put addresses, subjects or personal data in `stats/stats.json` or the README block. People running a private clone should record into `stats/local-stats.json` (`node scripts/stats.cjs --init-local`) and must not send a pull request that resets or replaces the public project status with their own numbers.
 
 ## Adding a machine-evaluated rule
 

@@ -7,7 +7,7 @@ const { spawnSync } = require('node:child_process');
 const { validateAgainstSchema } = require('../scripts/validate-rules.cjs');
 const {
   paths, loadStats, saveStats, validateStats, record, render, renderBlock,
-  deriveFromRepo, nowAmsterdamIso, START, END
+  deriveFromRepo, nowAmsterdamIso, START, END, reset, initLocal, isPublicStatsFile, emptyDocument
 } = require('../scripts/stats.cjs');
 const { loadPrivateIdentifiers } = require('../scripts/redact.cjs');
 
@@ -122,5 +122,51 @@ if (identifiers) {
 // Timestamp helper produces an explicit numeric offset (not Z).
 assert.match(nowAmsterdamIso(new Date('2026-11-15T12:00:00Z')), /^2026-11-15T13:00:00\+01:00$/);
 
+// --init-local writes a gitignored-style local file and never overwrites public stats.
+const localPath = path.join(tmp, 'stats/local-stats.json');
+const initialized = initLocal(localPath, { root: tmp, now: new Date('2026-11-15T12:00:00Z') });
+assert.equal(initialized.path, localPath);
+assert.equal(initialized.document.totals.mailsChecked, 0);
+assert.equal(initialized.document.providers.gmail.phishing, 0);
+assert.equal(initialized.document.trackingSince, '2026-11-15');
+assert.equal(initialized.document.notes.includes('@'), false);
+const publicBefore = loadStats(paths(tmp));
+assert.ok(publicBefore.totals.mailsChecked > 0);
+assert.throws(() => initLocal(path.join(tmp, 'stats/stats.json'), { root: tmp }), /Refusing to initialize the public/);
+
+// Recording to a local file does not rewrite the README status block.
+const localRecord = spawnSync(process.execPath, [
+  path.join(repo.root, 'scripts/stats.cjs'), '--file', localPath, '--record',
+  JSON.stringify({ gmail: { mailsChecked: 2, spam: 2, sendersBlocked: 2, movedToTrash: 2 } })
+], { cwd: tmp, encoding: 'utf8', env: { ...process.env, ESF_STATS_ROOT: tmp, ESF_STATS_FILE: '' } });
+assert.equal(localRecord.status, 0, localRecord.stderr);
+assert.match(localRecord.stdout, /Skipped README render because this is a local stats file/);
+const localAfter = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+assert.equal(localAfter.totals.mailsChecked, 2);
+assert.equal(loadStats(paths(tmp)).totals.mailsChecked, publicBefore.totals.mailsChecked);
+assert.throws(() => render({ root: tmp, statsFile: localPath }), /Refusing to render the repository README from a local stats file/);
+
+// --reset --yes zeros the selected file only.
+const resetLocal = reset({ root: tmp, statsFile: localPath, now: new Date('2026-11-16T09:00:00Z') });
+assert.equal(resetLocal.totals.mailsChecked, 0);
+assert.equal(resetLocal.providers.outlook.spam, 0);
+assert.equal(resetLocal.trackingSince, '2026-11-16');
+assert.equal(loadStats(paths(tmp)).totals.mailsChecked, publicBefore.totals.mailsChecked);
+
+const resetCli = spawnSync(process.execPath, [path.join(repo.root, 'scripts/stats.cjs'), '--reset'], {
+  cwd: tmp, encoding: 'utf8', env: { ...process.env, ESF_STATS_ROOT: tmp }
+});
+assert.notEqual(resetCli.status, 0);
+assert.match(resetCli.stderr, /without --yes/);
+
+const resetYes = spawnSync(process.execPath, [path.join(repo.root, 'scripts/stats.cjs'), '--file', localPath, '--reset', '--yes'], {
+  cwd: tmp, encoding: 'utf8', env: { ...process.env, ESF_STATS_ROOT: tmp }
+});
+assert.equal(resetYes.status, 0, resetYes.stderr);
+assert.match(resetYes.stdout, /Reset stats/);
+assert.equal(isPublicStatsFile(paths(tmp)), true);
+assert.equal(isPublicStatsFile(paths(tmp, { statsFile: localPath })), false);
+assert.ok(emptyDocument(paths(tmp)).derived.filterRevision);
+
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log('Stats record, schema, render and privacy tests passed.');
+console.log('Stats record, schema, render, reset and privacy tests passed.');

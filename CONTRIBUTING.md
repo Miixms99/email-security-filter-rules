@@ -1,6 +1,6 @@
 # Contributing
 
-Anyone can report a problem, propose an idea, or ask a question in this repository. You do not need to be a developer.
+Anyone can report a problem, propose an idea, or ask a question in this repository. You do not need to be a developer. If you want to run the full package against your own Gmail or Outlook account(s), start with [GETTING-STARTED.md](GETTING-STARTED.md).
 
 ## How to open an issue
 
@@ -57,4 +57,4 @@ Rule changes go through pull requests. CI must pass before a pull request is mer
 4. Open a pull request. The title must say concretely what changed (for example "Add gambling-lure signal and two corpus samples", not "Update rules").
 5. Wait for CI on Node 20 and 22. A pull request is merged only after the tests pass.
 
-Do not commit real email, personal addresses, or `config/private-identifiers.json`. New rules start as `signal_only` (or `candidate`). See the [Corpus](README.md#corpus) and [Contributing and the rule gate](README.md#contributing-and-the-rule-gate) sections in the README, and [SECURITY.md](SECURITY.md).
+Do not commit real email, personal addresses, `config/private-identifiers.json`, `config/accounts.json`, or `stats/local-stats.json`. New rules start as `signal_only` (or `candidate`). See the [Corpus](README.md#corpus) and [Contributing and the rule gate](README.md#contributing-and-the-rule-gate) sections in the README, [GETTING-STARTED.md](GETTING-STARTED.md) if you are using the package with your own mailboxes, and [SECURITY.md](SECURITY.md).
