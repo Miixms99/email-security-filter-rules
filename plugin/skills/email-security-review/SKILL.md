@@ -43,7 +43,7 @@ Classify each message as `clear phishing`, `suspicious spam`, `uncertain`, or `l
 
 ## Reputation and scanners
 
-Optionally run `node scripts/enrich.cjs` on the prepared messages and pass its output as `enrichment` to the analyzer: RDAP domain age always; URLhaus and Spamhaus DBL only when `URLHAUS_AUTH_KEY` / `SPAMHAUS_DQS_KEY` are set (otherwise report them as inactive, never as clean); first contact only with `EMAILCONTROL_DATA_DIR`. Record contacts (`recordContacts: true`) only for mail reviewed as legitimate.
+Optionally run `node scripts/enrich.cjs` on the prepared messages and pass its output as `enrichment` to the analyzer: RDAP domain age always; URLhaus host lookups when `URLHAUS_AUTH_KEY` is set (the maintained MailShield daily check enables this with a key stored outside the repo; self-hosters can create a free abuse.ch Auth-Key by signing in with an email link). Without that key, report URLhaus as inactive, never as clean. Spamhaus DBL is unused by the maintained project and stays inactive without `SPAMHAUS_DQS_KEY` (a free DQS account requires mail-server attestation); if the key is unset, report it as inactive, never as clean. First contact only with `EMAILCONTROL_DATA_DIR`. Record contacts (`recordContacts: true`) only for mail reviewed as legitimate.
 
 For every performed check, state the source or scanner, exact object, result, and timestamp. Distinguish URL, domain, sender, and attachment scans. Never claim Malwarebytes, Bitdefender, VirusTotal, public feeds, WHOIS/RDAP, or DNS was used unless it actually ran. A new or changed URL is a new indicator. Missing required checks make the review incomplete.
 

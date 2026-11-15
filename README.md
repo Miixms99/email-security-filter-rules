@@ -5,7 +5,7 @@ that you can use with your own Gmail and Outlook accounts (one or several). The
 repository is public: it holds abstracted signals and a small redacted corpus of
 clear phishing/spam excerpts (see [Corpus](#corpus)), never full emails or personal data.
 
-*Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes.*
+*Maintained by Grok Bot (Email Security agent): the daily spam-check routine proposes new signals through pull requests, which are merged after CI passes. That check also looks up already observed hosts in URLhaus; the Auth-Key stays outside the repository and only domain or host names are sent.*
 
 ## Use it for your own mailbox
 
@@ -61,7 +61,7 @@ Grok Bot reviews every issue and decides what to do: accept it, ask for more inf
 | Analyzer | `scripts/Controle-Email.cjs` | Offline analysis of structured message data: URL parsing with the Public Suffix List, OpenPhish exact match, link/identity comparison, campaign, sender and signal rules. Never visits URLs and never touches a mailbox. |
 | Signal library | `scripts/signals.cjs` | Header parsing (Authentication-Results, ARC, Microsoft anti-spam), DMARC alignment, Unicode confusables, sender rules and the generic signal-rule evaluators. |
 | Rule routing | `scripts/rule-learning.cjs` | `runtimeRuleSet()` routes enabled rules to the analyzer input that can evaluate them; `discover()` proposes campaign candidates from reviewed abstractions. |
-| Enrichment | `scripts/enrich.cjs` | Optional network step: RDAP domain age, URLhaus and Spamhaus DBL (only with keys), and the hashed first-contact history. Its output is passed to the analyzer as `enrichment`. |
+| Enrichment | `scripts/enrich.cjs` | Optional network step: RDAP domain age always; URLhaus host lookups (enabled in the maintained daily check with a key stored outside the repo; self-hosters set `URLHAUS_AUTH_KEY`); Spamhaus DBL (unused by the maintained project; optional if you set `SPAMHAUS_DQS_KEY`); and the hashed first-contact history. Its output is passed to the analyzer as `enrichment`. |
 | Rule loader | `scripts/fetch-rules.cjs` | Fetches the rules from GitHub (or `--local`), validates them like CI and prints analyzer-ready rule sets. |
 | Validator | `scripts/validate-rules.cjs` | Schema, policy flags, unique IDs, private-data scan, severity/weight consistency, and a runtime-load check of every enabled rule. |
 | Publication gate | `scripts/prepare-publication.cjs`, `scripts/chat-review.cjs` | Reviewed candidate publication (see `PUBLICATION.md`). |
@@ -114,8 +114,8 @@ Signal matches carry their severity weight (low 1, medium 2, high 4). A high-sev
 | `attachment.qr-image-bait.v1` | attachment | low | `attachment_qr_bait` |
 | `attachment.ics-invite-lure.v1` | attachment | low | `calendar_invite_lure` |
 | `domain.newly-registered.v1` | domain_reputation | medium | `domain_age` (needs enrichment) |
-| `domain.spamhaus-dbl.v1` | domain_reputation | high | `spamhaus_dbl` (needs enrichment + `SPAMHAUS_DQS_KEY`) |
-| `link.urlhaus-listed.v1` | domain_reputation | high | `urlhaus_host` (needs enrichment + `URLHAUS_AUTH_KEY`) |
+| `domain.spamhaus-dbl.v1` | domain_reputation | high | `spamhaus_dbl` (needs enrichment + `SPAMHAUS_DQS_KEY`; unused by the maintained project) |
+| `link.urlhaus-listed.v1` | domain_reputation | high | `urlhaus_host` (needs enrichment + `URLHAUS_AUTH_KEY`; enabled in the maintained daily check) |
 | `identity.first-contact-brand-claim.v1` | identity | medium | `first_contact_brand` (needs enrichment + `EMAILCONTROL_DATA_DIR`) |
 | `link.visible-href-domain-mismatch.v1` | link | medium | `link_visible_mismatch` |
 | `link.shortener-or-open-redirect.v1` | link | low | assistant review |
@@ -168,12 +168,12 @@ These are judged from filename extension and MIME type only. Attachments are nev
 | Source | Signal | Needs | When missing |
 | --- | --- | --- | --- |
 | [RDAP](https://about.rdap.org/) via `rdap.org` | Domain registered at most 30 days ago | nothing | n/a (some TLDs have no RDAP: result `unknown`) |
-| [URLhaus](https://urlhaus.abuse.ch/api/) host lookup | Link host distributes malware | `URLHAUS_AUTH_KEY` (free abuse.ch Auth-Key) | inactive |
-| [Spamhaus DBL](https://www.spamhaus.com/data-access/) via DQS | Sender or link domain listed (`127.0.1.x`) | `SPAMHAUS_DQS_KEY` | inactive |
+| [URLhaus](https://urlhaus.abuse.ch/api/) host lookup | Link host distributes malware | `URLHAUS_AUTH_KEY` (free abuse.ch Auth-Key; sign in with an email link) | Enabled in the maintained daily check (key kept outside the repo). For self-hosters: inactive until you set your own key. |
+| [Spamhaus DBL](https://www.spamhaus.com/data-access/) via DQS | Sender or link domain listed (`127.0.1.x`) | `SPAMHAUS_DQS_KEY` | Unused by the maintained project (a free DQS account requires mail-server attestation). Inactive without a key; optional for self-hosters who have one. |
 | First-contact history | Unknown sender domain claiming a brand | `EMAILCONTROL_DATA_DIR` | inactive |
 
-- **Spamhaus:** a free DQS account requires your own mail server, so `domain.spamhaus-dbl.v1` stays inactive until you set `SPAMHAUS_DQS_KEY`. Answers in `127.255.255.x` (public resolver, typo, rate limit) are treated as errors and never as listings. The public `dbl.spamhaus.org` zone is not used, because it refuses public resolvers.
-- **URLhaus:** abuse.ch now requires a free Auth-Key even for the community API, so `link.urlhaus-listed.v1` stays inactive without `URLHAUS_AUTH_KEY`.
+- **URLhaus:** the maintained MailShield daily spam-check looks up already observed link and sender hosts in URLhaus, using the maintainer bot's own abuse.ch account. The Auth-Key is kept outside the repository (environment only). Only domain or host names are sent, never addresses, paths or message content. Self-hosters can create their own free abuse.ch Auth-Key (sign in with an email link) and set `URLHAUS_AUTH_KEY`. Without a key, `link.urlhaus-listed.v1` stays inactive and must be reported as inactive, never as clean. On 15 November 2026, 71 known hosts from the rules, the redacted corpus and the blocked-sender audit were checked; 0 were listed (11 shared-infrastructure hosts were excluded and not queried).
+- **Spamhaus:** the maintained project does not use Spamhaus DQS, because a free account requires attesting that you run a mail server. `domain.spamhaus-dbl.v1` remains optional and stays inactive without `SPAMHAUS_DQS_KEY`. Self-hosters who have their own key may enable it. Answers in `127.255.255.x` (public resolver, typo, rate limit) are treated as errors and never as listings. The public `dbl.spamhaus.org` zone is not used, because it refuses public resolvers.
 - **First contact:** `contact-history.json` contains only HMAC-SHA256 hashes of organizational sender domains, salted with a random local salt. It is written only when the input sets `"recordContacts": true`. Seed it from known legitimate mail first; with an empty history every sender counts as a first contact.
 - **Keys:** keys are read from environment variables only and are never written to files, caches or output. Lookups are cached in `enrichment-cache.json` in the cache directory (registration data 7 days, URLhaus 6 hours, DBL 1 hour, errors 30 minutes). `--offline` uses the cache only.
 
@@ -225,8 +225,8 @@ To use the central rules instead, merge the `campaignRules`, `senderRules` and `
 | --- | --- | --- |
 | `ESF_CACHE_DIR` (legacy `EMAILCONTROL_CACHE_DIR`) | Linux/macOS: `$XDG_CACHE_HOME/email-security`, else `~/.cache/email-security`. Windows: the `scripts` folder, which must be on `D:` unless the variable is set. | Public feed cache (`publieke-bronnen.json`) and enrichment cache (`enrichment-cache.json`). |
 | `EMAILCONTROL_DATA_DIR` | none (required for `--plan` and first contact) | Private local state (`email-register.json`, `email-bewijs.json`, `contact-history.json`). Never commit it. |
-| `SPAMHAUS_DQS_KEY` | unset (inactive) | Spamhaus DQS key for `domain.spamhaus-dbl.v1`. |
-| `URLHAUS_AUTH_KEY` | unset (inactive) | abuse.ch Auth-Key for `link.urlhaus-listed.v1`. |
+| `SPAMHAUS_DQS_KEY` | unset (inactive). Unused by the maintained project. | Optional Spamhaus DQS key for `domain.spamhaus-dbl.v1`. Never commit the key. |
+| `URLHAUS_AUTH_KEY` | unset for self-hosters (inactive). The maintained daily check sets it from a secret stored outside the repo. | Free abuse.ch Auth-Key for `link.urlhaus-listed.v1`. Sign in at abuse.ch with an email link. Never commit the key. |
 
 Storage paths are confined to their directory: no `..` traversal, no symbolic links or junctions, and a realpath containment check.
 
