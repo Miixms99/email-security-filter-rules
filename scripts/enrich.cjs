@@ -45,14 +45,14 @@ function interpretRdap(json, now = Date.now(), domain = null) {
   if (!Number.isFinite(at)) return { status: 'unknown', reason: 'no_registration_event' };
   return { status: 'known', registeredAt: new Date(at).toISOString().slice(0, 10), ageDays: Math.max(0, Math.floor((now - at) / DAY)) };
 }
-async function queryRdap(domain, fetchImpl = fetch) {
+async function queryRdap(domain, fetchImpl = fetch, now = Date.now()) {
   try {
     const response = await fetchImpl('https://rdap.org/domain/' + encodeURIComponent(domain), { headers: { Accept: 'application/rdap+json, application/json', 'User-Agent': UA }, signal: AbortSignal.timeout(10000) });
     if (response.status === 404) return { status: 'unknown', reason: 'rdap_not_found_or_unsupported_tld' };
     if (!response.ok) return { status: 'error', reason: 'http_' + response.status };
     const text = await response.text();
     if (text.length > 1048576) return { status: 'error', reason: 'response_too_large' };
-    return interpretRdap(JSON.parse(text), Date.now(), domain);
+    return interpretRdap(JSON.parse(text), now, domain);
   } catch (error) { return { status: 'error', reason: error.name === 'TimeoutError' ? 'timeout' : 'request_failed' }; }
 }
 
@@ -137,7 +137,7 @@ async function enrich(input, { env = process.env, now = Date.now(), fetchImpl = 
     rdap: offline ? 'offline' : 'enabled', urlhaus: urlhausKey ? 'enabled' : 'inactive_no_URLHAUS_AUTH_KEY', spamhausDbl: dqsKey ? 'enabled' : 'inactive_no_SPAMHAUS_DQS_KEY',
     firstContact: historyPath(env.EMAILCONTROL_DATA_DIR) ? 'enabled' : 'inactive_no_EMAILCONTROL_DATA_DIR' }, domains: {}, hosts: {}, senders: {} };
   for (const d of domains) {
-    result.domains[d] = { registration: await cached('registration', d, () => queryRdap(d, fetchImpl)) };
+    result.domains[d] = { registration: await cached('registration', d, () => queryRdap(d, fetchImpl, now)) };
     if (dqsKey) result.domains[d].dbl = await cached('dbl', d, () => queryDbl(d, dqsKey, resolve4));
   }
   if (urlhausKey) for (const h of hosts) result.hosts[h] = { urlhaus: await cached('urlhaus', h, () => queryUrlhaus(h, urlhausKey, fetchImpl)) };

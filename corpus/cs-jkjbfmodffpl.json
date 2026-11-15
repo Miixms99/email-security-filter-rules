@@ -1,0 +1,28 @@
+{
+  "id": "cs-jkjbfmodffpl",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "nooreply@gupuapoolhb.us",
+  "senderDisplayName": "[TOKEN]",
+  "subject": "Discover Horse Boost ME Gummies",
+  "lureSnippets": [
+    "NEW PRESENTATION NOW AVAILABLE",
+    "A simple daily gummy routine built for men's wellness",
+    "WATCH THE PRESENTATION →",
+    "Short video presentation • Tap to continue",
+    "Discover the Horse Boost ME Gummies presentation",
+    "Watch the short video to learn more about this convenient daily gummy format and the wellness routine featured in the presentation."
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/managelink/newligne.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "campaign 111.957097 (sq=111-957097 in storage.googleapis.com /managelink/newligne.html links); sender nooreply@ at random-letter .us domain; links were never opened or fetched",
+  "redactionApplied": [
+    "TOKEN"
+  ]
+}
