@@ -13,14 +13,14 @@ You need [Node.js 20 or newer](https://nodejs.org/). There are no other dependen
 **Option A — fork or clone** (best if you want updates and may contribute signals back):
 
 ```bash
-git clone https://github.com/miixms99/email-security-filter-rules.git
-cd email-security-filter-rules
+git clone https://github.com/miixms99/mailshield.git
+cd mailshield
 ```
 
 If you work from a fork, add the upstream remote so you can pull rule updates later:
 
 ```bash
-git remote add upstream https://github.com/miixms99/email-security-filter-rules.git
+git remote add upstream https://github.com/miixms99/mailshield.git
 ```
 
 **Option B — download** a ZIP from the repository's Code button and extract it. You can re-download later to pick up new rules, or switch to a clone when you want `git pull`.
@@ -237,7 +237,7 @@ You can also point `ESF_STATS_FILE` at your local stats path. Recording to a loc
 
 ## 10. Contribute signals back (no personal data)
 
-Anyone may [open an issue](https://github.com/miixms99/email-security-filter-rules/issues/new/choose) or a pull request. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Anyone may [open an issue](https://github.com/miixms99/mailshield/issues/new/choose) or a pull request. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 Share only abstracted signals: a lure-phrase type, a sender-address *shape*, a lookalike domain style, a campaign marker, a path pattern. Never paste real mail, names, your addresses, raw headers with recipient data, message IDs, or tracking links. Redact with placeholders such as `[NAME]`, `[EMAIL]`, and `[TOKEN]`.
 
