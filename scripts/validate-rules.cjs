@@ -22,7 +22,17 @@ function resolveRef(schema, root) {
 
 function validateAgainstSchema(value, schema, root, pointer) {
   schema = resolveRef(schema, root);
-  if (schema.type && typeOf(value) !== schema.type) fail(`${pointer} must be ${schema.type}`);
+  if (schema.type) {
+    if (schema.type === 'integer') {
+      if (typeof value !== 'number' || !Number.isInteger(value)) fail(`${pointer} must be an integer`);
+    } else if (schema.type === 'number') {
+      if (typeof value !== 'number' || Number.isNaN(value)) fail(`${pointer} must be a number`);
+    } else if (typeOf(value) !== schema.type) fail(`${pointer} must be ${schema.type}`);
+  }
+  if (typeof value === 'number') {
+    if (Object.hasOwn(schema, 'minimum') && value < schema.minimum) fail(`${pointer} is below ${schema.minimum}`);
+    if (Object.hasOwn(schema, 'maximum') && value > schema.maximum) fail(`${pointer} is above ${schema.maximum}`);
+  }
   if (Object.hasOwn(schema, 'const') && value !== schema.const) fail(`${pointer} must be ${JSON.stringify(schema.const)}`);
   if (schema.enum && !schema.enum.includes(value)) fail(`${pointer} must be one of ${schema.enum.join(', ')}`);
   if (schema.type === 'string') {
