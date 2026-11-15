@@ -1,0 +1,23 @@
+{
+  "id": "cs-eabcbijindoo",
+  "category": "spam",
+  "provider": "gmail",
+  "receivedDate": "2026-11-15",
+  "senderAddress": "nooreply@icoutxooeem.us",
+  "senderDisplayName": "[TOKEN]",
+  "subject": "Discover Horse Boost ME Gummies",
+  "lureSnippets": [
+    "Discover Horse Boost ME Gummies",
+    "relay google-apple.microsoft.biz.cultivo.ro"
+  ],
+  "linkHostsAndPaths": [],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "campaign.rotating-marker-sender-pattern.v1",
+    "identity.packed-brand-hostname.v1"
+  ],
+  "notes": "campaign marker 111-957097; sender nooreply@ at a random-letter .us domain; packed brand relay hostname google-apple.microsoft.biz.cultivo.ro; links on storage.googleapis.com (exact path not recorded); links were never opened or fetched",
+  "redactionApplied": [
+    "TOKEN"
+  ]
+}

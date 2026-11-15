@@ -22,6 +22,7 @@
   ],
   "attachmentTypes": [],
   "matchedRuleIds": [
+    "campaign.rotating-marker-sender-pattern.v1",
     "link.storage-or-free-host-html.v1"
   ],
   "notes": "hidden random hash-buster filler block appended (fake \"Enterprise Plus membership\" text with random-letter name); Date header is not RFC 5322 (MM-DD-YYYY), likely forged; primary link on a storage.googleapis.com campaign path carrying the sq=111-957097 parameter (query removed); links were never opened or fetched",

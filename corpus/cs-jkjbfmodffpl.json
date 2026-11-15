@@ -19,6 +19,7 @@
   ],
   "attachmentTypes": [],
   "matchedRuleIds": [
+    "campaign.rotating-marker-sender-pattern.v1",
     "link.storage-or-free-host-html.v1"
   ],
   "notes": "campaign 111.957097 (sq=111-957097 in storage.googleapis.com /managelink/newligne.html links); sender nooreply@ at random-letter .us domain; links were never opened or fetched",

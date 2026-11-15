@@ -26,23 +26,23 @@ A short Dutch summary is at the end of that guide.
 
 Updated automatically by Grok Bot after every daily spam check. Totals below are aggregate counts only (no addresses, subjects or personal data), since 14 November 2026. Mail-handling figures are lower bounds: only verified, classified mail is included.
 
-![Mails checked](https://img.shields.io/badge/Mails%20checked-29-0a66c2) ![Phishing caught](https://img.shields.io/badge/Phishing%20caught-7-c41e3a) ![Spam removed](https://img.shields.io/badge/Spam%20removed-22-d97706) ![Senders blocked](https://img.shields.io/badge/Senders%20blocked-19-4b5563) ![Domains blocked](https://img.shields.io/badge/Domains%20blocked-4-4b5563) ![Detection rules](https://img.shields.io/badge/Detection%20rules-41-0f766e)
+![Mails checked](https://img.shields.io/badge/Mails%20checked-32-0a66c2) ![Phishing caught](https://img.shields.io/badge/Phishing%20caught-8-c41e3a) ![Spam removed](https://img.shields.io/badge/Spam%20removed-24-d97706) ![Senders blocked](https://img.shields.io/badge/Senders%20blocked-22-4b5563) ![Domains blocked](https://img.shields.io/badge/Domains%20blocked-4-4b5563) ![Detection rules](https://img.shields.io/badge/Detection%20rules-46-0f766e)
 
 | | Count |
 | --- | ---: |
-| Mails checked | 29 |
-| Phishing caught | 7 |
-| Spam removed | 22 |
-| Senders blocked | 19 |
+| Mails checked | 32 |
+| Phishing caught | 8 |
+| Spam removed | 24 |
+| Senders blocked | 22 |
 | Domains blocked | 4 |
-| Detection rules | 41 |
-| Corpus samples | 19 |
-| Rules revision | 2026-11-15.3 |
-| Last check | 15 November 2026, 13:02 Europe/Amsterdam |
+| Detection rules | 46 |
+| Corpus samples | 22 |
+| Rules revision | 2026-11-15.4 |
+| Last check | 15 November 2026, 18:20 Europe/Amsterdam |
 
 | Provider | Checked | Phishing | Spam | Senders blocked |
 | --- | ---: | ---: | ---: | ---: |
-| Gmail | 15 | 7 | 8 | 15 |
+| Gmail | 18 | 8 | 10 | 18 |
 | Outlook | 14 | 0 | 14 | 4 |
 <!-- STATS:END -->
 
@@ -83,7 +83,7 @@ Grok Bot reviews every issue and decides what to do: accept it, ask for more inf
 
 Signal matches carry their severity weight (low 1, medium 2, high 4). A high-severity match, or a combined weight of at least 4, recommends review. No rule classifies a message or performs a mailbox action.
 
-## Rules (revision 2026-11-15.3)
+## Rules (revision 2026-11-15.4)
 
 | Rule | Category | Severity | Evaluated by |
 | --- | --- | --- | --- |
@@ -128,6 +128,11 @@ Signal matches carry their severity weight (low 1, medium 2, high 4). A high-sev
 | `identity.retailer-brand-local-part.v1` | identity | high | `impersonation_local_part_unrelated_domain` |
 | `social.spinkong-vip-sender.v1` | social_engineering | high | sender matcher |
 | `identity.cjib-impersonation-unrelated-domain.v1` | identity | high | `impersonation_local_part_unrelated_domain` |
+| `identity.brand-label-in-unrelated-domain.v1` | identity | high | `brand_label_in_unrelated_host` |
+| `identity.packed-brand-hostname.v1` | identity | high | `packed_brand_hostname` |
+| `social.oss-dev-marketing-mismatch.v1` | social_engineering | high | `display_brand_mismatch_and_phrases` |
+| `social.watch-before-deleted.v1` | social_engineering | low | `text_phrases` |
+| `social.fake-media-endorsement.v1` | social_engineering | medium | `media_endorsement` |
 
 A test (`tests/project.test.cjs`) fails if a rule exists in the JSON but is missing from this table.
 
@@ -154,7 +159,12 @@ These are judged from filename extension and MIME type only. Attachments are nev
 - **Gambling or casino lures**: promotional phrases such as "free spins", "first deposit bonus", "rakeback" or "welcome pack of". Ordinary invoices and retail cashback without these phrases are counterexamples.
 - **Letter-for-digit amounts**: a lookalike letter used as a digit in a money amount or number token, often only in the subject (`€1,25O`, `2OO`). Highway names such as I-95 are not flagged; I or l count only next to a currency marker.
 - **Lucky Boom / `outlet@` or `appliancebillow@`**: the display name "Lucky Boom" with local-part `outlet` or `appliancebillow` on rotating domains (observed examples include `ravenstone.pro`, `buyharbor.me`, `campaignharbor.info`, `northforge.rent` and other listed single-purpose domains). Those domains are also listed on `campaign.repeated-malicious-sender-domain.v1`.
-- **Rotating campaign marker `111.957097` / `111-957097`**: seven-letter local-part plus the marker, at an eight-letter label plus a word label under `.biz`, `.biz.id`, `.my.id`, `.web.id` or `.us`.
+- **Rotating campaign marker `111.957097` / `111-957097`**: seven-letter local-part plus the marker, at an eight-letter label plus a word label under `.biz`, `.biz.id`, `.my.id`, `.web.id` or `.us`. A documented variant, now evaluated by the sender matcher, is the misspelled local-part `nooreply` at a random 9-to-11-letter `.us` domain.
+- **Brand label on an unrelated domain**: a well-known brand token such as `adobe` appears as a hostname label outside the registrable domain (for example a random label, then the brand, then an unrelated `.me` domain). Genuine brand subdomains are counterexamples.
+- **Packed brand hostname**: one hostname packs two or more well-known technology brand names as labels or hyphenated tokens, such as `google-apple.microsoft` on an unrelated domain. Ordinary brand infrastructure (for example `outlook.office.microsoft.com`) and prose that merely names several brands are counterexamples.
+- **Unsolicited open-source or GitHub-star marketing**: a display name claims a product plus a support or official-team role, that brand token does not appear in the sender domain, and the message uses promotional phrases such as "developer marketing plan" or "github stars". Mail from the claimed brand's own domain is a counterexample.
+- **Watch-before-deleted urgency**: clickbait wording such as "watch before deleted" in the subject or body. Supporting context only.
+- **Fake media endorsement**: an "as seen on" or "as featured on" lure next to a listed media brand (for example CBS News or Men's Health), or a "Dr. Oz on CBS" style phrase, from a sender domain that is not that media outlet. Supporting context only.
 - **Hyphen-leading domain labels**: a sender domain label that starts with one or more hyphens (invalid as an ordinary DNS label), including hyphen-padded mail labels and long random labels.
 - **Random alphanumeric sender shape**: an eight-character alphanumeric local-part at a 28-to-32-character alphanumeric `.com` domain.
 - **Retailer brand as local-part**: local-parts such as `walmart`, `bestbuy`, `samsclub` or `costco` on a domain that is not the brand's genuine domain. A genuine newsletter at the brand domain is a counterexample.
