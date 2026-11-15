@@ -35,7 +35,7 @@ never full emails or personal data.
 
 Signal matches carry their severity weight (low 1, medium 2, high 4). A high-severity match, or a combined weight of at least 4, recommends review. No rule classifies a message or performs a mailbox action.
 
-## Rules (revision 2026-11-14.7)
+## Rules (revision 2026-11-15.1)
 
 | Rule | Category | Severity | Evaluated by |
 | --- | --- | --- | --- |

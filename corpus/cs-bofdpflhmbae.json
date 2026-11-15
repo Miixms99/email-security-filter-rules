@@ -1,0 +1,27 @@
+{
+  "id": "cs-bofdpflhmbae",
+  "category": "phishing",
+  "provider": "gmail",
+  "receivedDate": "2026-11-14",
+  "senderAddress": "nooreply@xkfalnobfhq.us",
+  "senderDisplayName": "Cloud-Storage",
+  "subject": "🔴 IMMEDIATE ACTION REQUIRED: Your Photos & Videos Are at Risk of Permanent Deletion!",
+  "lureSnippets": [
+    "🚨 FINAL WARNING: Your files will be PERMANENTLY DELETED in 24 hours. Immediate action required.",
+    "Support Team - Account Deletion in Progress",
+    "⛔ YOUR ACCOUNT HAS BEEN FLAGGED FOR DELETION [ LAST CHANCE ]",
+    "Subscription ID:"
+  ],
+  "linkHostsAndPaths": [
+    "https://storage.googleapis.com/managelink/newligne.html"
+  ],
+  "attachmentTypes": [],
+  "matchedRuleIds": [
+    "link.storage-or-free-host-html.v1"
+  ],
+  "notes": "campaign 111.957097 (sq=111-957097 in storage.googleapis.com /managelink/newligne.html links); sender nooreply@ at random-letter .us domain; links were never opened or fetched",
+  "redactionApplied": [
+    "EMAIL",
+    "NAME"
+  ]
+}
