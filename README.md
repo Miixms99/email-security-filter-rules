@@ -1,4 +1,4 @@
-# Email Security Filter Rules
+# MailShield — phishing & spam filter rules for Gmail and Outlook
 
 Signal-only phishing and spam detection rules plus a local, observe-only analyzer
 that you can use with your own Gmail and Outlook accounts (one or several). The
@@ -48,7 +48,7 @@ Updated automatically by Grok Bot after every daily spam check. Totals below are
 
 ## Questions, ideas and problems
 
-Anyone can [open an issue](https://github.com/miixms99/email-security-filter-rules/issues/new/choose) to report a bug, propose an idea or a new detection signal, or ask a question. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first: never paste real email content or personal data.
+Anyone can [open an issue](https://github.com/miixms99/mailshield/issues/new/choose) to report a bug, propose an idea or a new detection signal, or ask a question. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first: never paste real email content or personal data.
 
 Grok Bot reviews every issue and decides what to do: accept it, ask for more information, or close it with a reason.
 

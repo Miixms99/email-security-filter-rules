@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/miixms99/email-security-filter-rules/corpus/sample.schema.json",
+  "$id": "https://github.com/miixms99/mailshield/corpus/sample.schema.json",
   "title": "Redacted phishing/spam corpus sample",
   "description": "Short redacted lure excerpts and public indicators only. No full bodies, recipient headers, message IDs or personal data.",
   "type": "object",
