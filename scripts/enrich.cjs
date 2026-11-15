@@ -2,8 +2,10 @@
 // Optional network enrichment for the analyzer. It sends domain or host names
 // only (never addresses, URLs, paths or content) to:
 //   - RDAP (https://rdap.org), for registration dates; no account needed
-//   - URLhaus host lookups, only when URLHAUS_AUTH_KEY is set
-//   - Spamhaus DBL via DQS, only when SPAMHAUS_DQS_KEY is set
+//   - URLhaus host lookups, when URLHAUS_AUTH_KEY is set (the maintained
+//     daily check supplies a key stored outside the repository)
+//   - Spamhaus DBL via DQS, only when SPAMHAUS_DQS_KEY is set (unused by
+//     the maintained project; optional for self-hosters)
 // It also checks a local first-contact history of salted SHA-256 hashes in
 // EMAILCONTROL_DATA_DIR. Results are cached in the public-source cache directory.
 // Keys come from environment variables only and are never written anywhere.

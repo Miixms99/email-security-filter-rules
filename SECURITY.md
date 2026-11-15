@@ -16,6 +16,10 @@ This repository is public. Do not submit private email content or account data. 
 
 Only generalized, non-personal indicators needed to explain a reusable detection rule, such as an abstract URL-path pattern, authentication mismatch category, or repeated social-engineering structure.
 
+## External lookups
+
+Network enrichment (`scripts/enrich.cjs`) sends only domain or host names, never addresses, paths, message content, or keys. The maintained project's daily check uses URLhaus with an Auth-Key stored outside this repository (environment only). Self-hosters who want the same signal set `URLHAUS_AUTH_KEY` themselves. Never commit API keys, including `URLHAUS_AUTH_KEY` or `SPAMHAUS_DQS_KEY`.
+
 ## Reporting a security problem
 
 If you find a security problem in this project, tell the repository owner privately. Do not include real mail data, personal addresses, names, headers with personal data, or raw message sources. Use a redacted or synthetic example. See [CONTRIBUTING.md](CONTRIBUTING.md).
