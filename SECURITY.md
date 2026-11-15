@@ -15,4 +15,8 @@ This repository is public. Do not submit private email content or account data. 
 
 Only generalized, non-personal indicators needed to explain a reusable detection rule, such as an abstract URL-path pattern, authentication mismatch category, or repeated social-engineering structure.
 
+## Reporting a security problem
+
+If you find a security problem in this project, tell the repository owner privately. Do not include real mail data, personal addresses, names, headers with personal data, or raw message sources. Use a redacted or synthetic example. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 Report accidental disclosure privately to the repository owner. Do not open a public issue containing the exposed value.
