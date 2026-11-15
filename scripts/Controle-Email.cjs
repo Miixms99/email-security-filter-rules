@@ -353,6 +353,7 @@ function inputMessages(input) {
     if (seen.has(key)) fail('Duplicate mailbox/messageId in input'); seen.add(key);
     const fromAddress = bounded(message.fromAddress, 320, 'fromAddress', true), replyTo = bounded(message.replyTo, 320, 'replyTo', true);
     const displayName = bounded(message.displayName, 320, 'displayName', true), text = bounded(message.text, 500000, 'text', true);
+    const subject = bounded(message.subject ?? message.extraction?.subject, 300, 'subject', true);
     const linkPairs = message.linkPairs === undefined ? [] : message.linkPairs;
     if (!Array.isArray(message.urls) || !Array.isArray(linkPairs) || linkPairs.length > 500) fail('Invalid URL or link-pair list');
     const pairs = linkPairs.map(pair => {
@@ -374,7 +375,7 @@ function inputMessages(input) {
     const headers = signalsLib.normalizeHeaders(message.headers ?? message.extraction?.originalHeaders ?? message.extraction?.headers);
     const attachments = message.attachments ?? (Array.isArray(message.extraction?.attachments) ? message.extraction.attachments : []);
     if (!Array.isArray(attachments) || attachments.length > 200 || attachments.some(x => !x || typeof x !== 'object' || (x.filename !== undefined && typeof x.filename !== 'string') || (x.mime !== undefined && typeof x.mime !== 'string'))) fail('Invalid attachment metadata');
-    return { mailbox, messageId, fromAddress, replyTo, displayName, text, linkPairs: pairs, cssExtraction,
+    return { mailbox, messageId, fromAddress, replyTo, displayName, subject, text, linkPairs: pairs, cssExtraction,
       confirmedReport: context?.securityReport === true, urls: [...new Set(destinations)], headers,
       attachments: attachments.map(x => ({ filename: String(x.filename || '').slice(0, 260), mime: String(x.mime || '').toLowerCase().slice(0, 200) })) };
   });
@@ -463,7 +464,7 @@ function analyze(input, loaded = readCache()) {
     const auth = signalsLib.parseAuthResults(message.headers), ms = signalsLib.parseMsAntispam(message.headers);
     const orgDomain = host => { const r = domain(host); return sourceInfo.psl.status === 'current' && r.status === 'known' ? r.value : null; };
     const alignment = signalsLib.dmarcAlignment(auth, from.status === 'parsed' ? from.hostname : null, orgDomain);
-    const ctx = { auth, ms, alignment, from: from.status === 'parsed' ? from : null, replyComparison, linkComparisons, urlFindings, displayName: message.displayName, text: message.text, orgDomain, attachments: message.attachments, enrichment };
+    const ctx = { auth, ms, alignment, from: from.status === 'parsed' ? from : null, replyComparison, linkComparisons, urlFindings, displayName: message.displayName, subject: message.subject, headers: message.headers, text: message.text, orgDomain, attachments: message.attachments, enrichment };
     const configuredSignalMatches = [];
     let signalWeight = 0;
     for (const rule of signalRules) {
@@ -788,7 +789,7 @@ function extractMail(mailbox, full) {
   const text = texts.join('\n');
   bounded(text, 500000, 'extracted text');
   return { provider: 'Gmail', mailbox, messageId: full.id, fromAddress: match ? match[2] : from.trim(), displayName: match ? match[1].trim().replace(/^"|"$/g, '') : '',
-    replyTo: replyMatch ? replyMatch[1] : reply.trim(), text, urls: [...new Set(urls)], cssTexts, linkPairs,
+    replyTo: replyMatch ? replyMatch[1] : reply.trim(), subject: values('subject')[0] || '', text, urls: [...new Set(urls)], cssTexts, linkPairs,
     sourceHash: hash(JSON.stringify(full.payload)), providerLabels: Array.isArray(full.label_ids) ? full.label_ids : undefined,
     extraction: { headers, subject: values('subject')[0] || '', authentication: values('authentication-results'), attachments, parts,
       limitations: [...new Set([...limitations, 'Static bounded HTML extraction, not a complete HTML/MIME parser; no external content, attachments or QR decoded', 'Relative links, complex srcset, HTML entities outside the supported set and malformed markup require separate review'])] } };
@@ -815,7 +816,7 @@ function extractOutlook(mailbox, full, folderMap = {}) {
   }
   const source = {payload:pseudo.payload,from:full.from ?? null,sender:full.sender ?? null,subject:full.subject ?? null,replyTo:replies};
   const identitySource = from?.address ? 'outlook_from' : providerSender?.address ? 'outlook_sender_fallback_from_unavailable' : 'unavailable';
-  return {...prepared,provider:'Outlook',
+  return {...prepared,provider:'Outlook',subject:typeof full.subject==='string'?full.subject:(prepared.subject||prepared.extraction?.subject||''),
     // A provider sender fallback is useful for triage but is never silently
     // promoted to a confirmed transport From address for blocking/reporting.
     fromAddress: from?.address || '',
@@ -946,7 +947,7 @@ async function main() {
   const [command, ...extra] = process.argv.slice(2);
   if (extra.length) fail('Unexpected arguments');
   let result;
-  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean,enrichment?:<output of scripts/enrich.cjs>} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
+  if (command === '--help') result = { commands: ['--self-test', '--evaluate', '--status', '--refresh', '--analyze', '--extract', '--plan', '--retry-plan'], input: '{messages:[{mailbox,messageId,fromAddress?,replyTo?,displayName?,subject?,text?,urls:[],cssTexts?:string[],linkPairs?:[{visibleUrl,href}],context?:{securityReport:boolean,source:"user_confirmed"},headers?:[{name,value}],attachments?:[{filename,mime}]}],campaignRules?:[{id,markers?:[],urlParameters?:[{name,value}],exactPaths:[],hosts?:[]}],senderRules?:[{id,senderDomains?:[],senderAddressRegex?:{localPart,domain}}],signalRules?:[{id,category,severity,weight,evaluator?,indicators}],useBundledRules?:boolean,enrichment?:<output of scripts/enrich.cjs>} or one message object. Pipe `node scripts/fetch-rules.cjs` output fields campaignRules/senderRules/signalRules, or set useBundledRules:true for the repository copy.', workflowInput: '{providerFormat:"gmail_full"|"outlook_message"|"structured",mailbox,messages:[provider message objects],campaignRules?:[ChatGPT-maintained rules],folderMap?:{junkFolderId,trashFolderId},forceUrls?:[exact URLs requiring new checks]}', extractInput:'{providerFormat?:"gmail_full"|"outlook_message",mailbox,full:provider message object,folderMap?:{junkFolderId,trashFolderId}}',retryInput:'{jobs:[scan jobs],attempts:[{engine,indicator,attempt:1..3,status:"completed"|"failed",completedAt:ISO timestamp,durationMs?,errorCode?,retryAfterSeconds?,result?}]} current-run attempts only; retry plan never executes calls', limits: { inputBytes: MAX_INPUT, messages: 100, urlsPerMessage: 500, totalUrls: 2000, campaignRules: 100 }, behavior: 'Read-only generic extraction and bounded static analysis. Campaign knowledge is supplied by ChatGPT at runtime, not embedded in production code. No scanner or mailbox actions. Only --refresh writes the public cache.' };
   else if (command === '--self-test') result = selfTest();
   else if (command === '--evaluate') result = evaluate();
   else if (command === '--status') result = { mode: 'public_source_status', sources: statuses(readCache()) };

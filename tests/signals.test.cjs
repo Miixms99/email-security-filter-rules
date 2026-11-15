@@ -44,4 +44,15 @@ assert.equal(S.senderMatches('a@notbad.example',rules).length,0);
 assert.equal(S.senderMatches('abc@x.example',rules)[0].ruleId,'r.v1');
 for(const p of ['[a-z]+','^(a+)+$','^(a)\\1$','^.*$x'])assert.throws(()=>S.compilePattern(p,'t'));
 assert.throws(()=>S.normalizeSignalRules([{id:'x.v1',evaluator:'nope',indicators:{a:1}}]));
-console.log('Header parsing (Gmail, Microsoft, ARC, forged lower header), alignment, MS verdicts, Unicode and sender-rule safety passed.');
+// Letter-for-digit amounts and phrase / display-name evaluators.
+assert.deepEqual(S.letterForDigitAmountTokens('UP TO €1,25O  +2OO FREE SPINS').sort(),['2OO','€1,25O']);
+assert.deepEqual(S.letterForDigitAmountTokens('Invoice €1,250.00 and $20.00 for 200 items'),[]);
+assert.ok(S.letterForDigitAmountTokens('Refund of €l00').includes('€l00'));
+assert.deepEqual(S.letterForDigitAmountTokens('Traffic update for highway I-95 and route I10'),[]);
+const phraseRule={id:'p.v1',evaluator:'text_phrases',indicators:{phrases:['free spins','first deposit bonus'],minMatches:1}};
+const nameRule={id:'n.v1',evaluator:'display_name_and_local_part',indicators:{displayNames:['Lucky Boom'],localParts:['outlet']}};
+assert.ok(S.evaluateSignalRule(phraseRule,{text:'Join now for 100% First Deposit Bonus'}));
+assert.equal(S.evaluateSignalRule(phraseRule,{text:'Your cashback has been credited'}),null);
+assert.ok(S.evaluateSignalRule(nameRule,{from:{localPart:'outlet',hostname:'buyharbor.me'},displayName:'Lucky Boom'}));
+assert.equal(S.evaluateSignalRule(nameRule,{from:{localPart:'outlet',hostname:'shop.example'},displayName:'Shop Outlet'}),null);
+console.log('Header parsing (Gmail, Microsoft, ARC, forged lower header), alignment, MS verdicts, Unicode, sender-rule safety and new signal evaluators passed.');
