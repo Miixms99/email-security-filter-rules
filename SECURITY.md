@@ -10,6 +10,7 @@ This repository is public. Do not submit private email content or account data. 
 - Passwords, OAuth tokens, API keys, cookies, or session data
 - Complete private URLs or query strings containing personal values
 - Screenshots of private mailboxes
+- Local config such as `config/private-identifiers.json` or `config/accounts.json`
 
 ## Allowed evidence
 

@@ -20,15 +20,58 @@ function defaultRoot() {
   return process.env.ESF_STATS_ROOT ? path.resolve(process.env.ESF_STATS_ROOT) : ROOT;
 }
 
-function paths(root = defaultRoot()) {
-  return {
-    root,
-    stats: path.join(root, 'stats/stats.json'),
-    schema: path.join(root, 'stats/stats.schema.json'),
-    readme: path.join(root, 'README.md'),
-    rules: path.join(root, 'rules/filter-rules.json'),
-    corpus: path.join(root, 'corpus')
+function paths(root = defaultRoot(), options = {}) {
+  const base = root || defaultRoot();
+  const resolved = {
+    root: base,
+    stats: path.join(base, 'stats/stats.json'),
+    schema: path.join(base, 'stats/stats.schema.json'),
+    readme: path.join(base, 'README.md'),
+    rules: path.join(base, 'rules/filter-rules.json'),
+    corpus: path.join(base, 'corpus')
   };
+  const statsFile = options.statsFile || process.env.ESF_STATS_FILE;
+  if (statsFile) resolved.stats = path.resolve(statsFile);
+  return resolved;
+}
+
+function isPublicStatsFile(p) {
+  return path.resolve(p.stats) === path.resolve(path.join(p.root, 'stats/stats.json'));
+}
+
+function emptyDocument(p, now = new Date()) {
+  const lastCheck = nowAmsterdamIso(now);
+  return {
+    schemaVersion: 1,
+    trackingSince: lastCheck.slice(0, 10),
+    lastCheck,
+    totals: emptyCounts(),
+    providers: { gmail: emptyCounts(), outlook: emptyCounts() },
+    derived: deriveFromRepo(p),
+    countsAreLowerBounds: false,
+    notes: 'Local stats initialized empty. Totals are aggregate counts only (no addresses, subjects or personal data).'
+  };
+}
+
+function reset(options = {}) {
+  const p = paths(options.root || ROOT, options);
+  const document = emptyDocument(p, options.now);
+  saveStats(document, p);
+  return document;
+}
+
+function initLocal(dest, options = {}) {
+  const root = options.root || ROOT;
+  const destPath = path.resolve(dest || path.join(root, 'stats/local-stats.json'));
+  const publicStats = path.resolve(root, 'stats/stats.json');
+  if (path.resolve(destPath) === publicStats) {
+    fail('Refusing to initialize the public stats/stats.json via --init-local. Use --reset --yes to zero that file in a private clone, or pass a different --file path.');
+  }
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  const p = paths(root, { statsFile: destPath });
+  const document = emptyDocument(p, options.now);
+  saveStats(document, p);
+  return { path: destPath, document };
 }
 
 function emptyCounts(overrides = {}) {
@@ -227,7 +270,7 @@ function incrementFromRun(run, p) {
 }
 
 function record(raw, options = {}) {
-  const p = paths(options.root || ROOT);
+  const p = paths(options.root || ROOT, options);
   const run = typeof raw === 'string' ? parseRecordInput(raw) : raw;
   const { document, checkedProviders } = incrementFromRun(run, p);
   saveStats(document, p);
@@ -297,7 +340,10 @@ function replaceReadmeSection(readme, block) {
 }
 
 function render(options = {}) {
-  const p = paths(options.root || ROOT);
+  const p = paths(options.root || ROOT, options);
+  if (!isPublicStatsFile(p) && !options.forceRender) {
+    fail('Refusing to render the repository README from a local stats file (that would replace the public project status). Use --no-render, or pass --force-render only if this clone is for your own status block.');
+  }
   const document = loadStats(p);
   document.derived = deriveFromRepo(p, document.derived);
   validateStats(document, loadSchema(p));
@@ -319,6 +365,8 @@ function usage() {
   node scripts/stats.cjs --record <json-file-or-inline-JSON>
   node scripts/stats.cjs --render
   node scripts/stats.cjs --render --check
+  node scripts/stats.cjs --init-local [path]
+  node scripts/stats.cjs --reset --yes
 
 --record adds one check run's counts (non-negative integers under "gmail"
 and/or "outlook"), increments spamChecksRun, and sets lastCheck to now
@@ -329,7 +377,29 @@ README status block unless --no-render is also passed.
 <!-- STATS:END --> from stats/stats.json plus values derived from the
 repository (active rule count, filter revision, corpus samples, merged
 rule pull requests). --check leaves the files unchanged and exits
-non-zero if the section is out of sync.`;
+non-zero if the section is out of sync.
+
+--init-local writes a fresh empty stats file (default: stats/local-stats.json,
+gitignored) so your mailbox counts stay separate from the public project
+status. It never overwrites stats/stats.json.
+
+--reset --yes zeros the current stats file (public stats/stats.json, or
+--file / ESF_STATS_FILE). Use this only in a private clone. Do not commit a
+reset of the public project status back upstream.
+
+--file PATH    Read and write this stats file instead of stats/stats.json.
+               Recording to a local file skips README rendering unless
+               --force-render is also passed.
+ESF_STATS_FILE and ESF_STATS_ROOT environment variables select a file or
+a separate repository-shaped root, respectively.`;
+}
+
+function parseFileOption(argv, options) {
+  const idx = argv.indexOf('--file');
+  if (idx === -1) return options.statsFile;
+  const value = argv[idx + 1];
+  if (!value || value.startsWith('--')) fail('Usage: --file <path>');
+  return value;
 }
 
 function main(argv = process.argv.slice(2), options = {}) {
@@ -342,21 +412,49 @@ function main(argv = process.argv.slice(2), options = {}) {
   const renderFlag = argv.includes('--render');
   const checkFlag = argv.includes('--check');
   const noRender = argv.includes('--no-render');
-  const recordIdx = argv.indexOf('--record');
-  if (recordIdx !== -1) {
-    const raw = argv[recordIdx + 1];
-    if (!raw || raw.startsWith('--')) fail('Usage: node scripts/stats.cjs --record <json-file-or-inline-JSON>');
-    const { document, checkedProviders } = record(raw, { root });
-    const names = checkedProviders.length ? checkedProviders.join(', ') : 'totals only';
-    console.log(`Recorded check run #${document.totals.spamChecksRun} (${names}). Last check ${document.lastCheck}.`);
-    if (!noRender) {
-      const result = render({ root });
+  const forceRender = argv.includes('--force-render');
+  const statsFile = parseFileOption(argv, options);
+  const pathOptions = { root, statsFile };
+
+  if (argv.includes('--init-local')) {
+    const idx = argv.indexOf('--init-local');
+    const next = argv[idx + 1];
+    const dest = next && !next.startsWith('--') ? next : path.join(root, 'stats/local-stats.json');
+    const result = initLocal(dest, pathOptions);
+    console.log(`Wrote empty local stats to ${result.path}. Record runs with:`);
+    console.log(`  node scripts/stats.cjs --file ${result.path} --record run.json --no-render`);
+    return 0;
+  }
+  if (argv.includes('--reset')) {
+    if (!argv.includes('--yes')) fail('Refusing to reset stats without --yes. This zeros the selected stats file.');
+    const document = reset(pathOptions);
+    const p = paths(root, pathOptions);
+    console.log(`Reset stats in ${p.stats} (tracking since ${document.trackingSince}).`);
+    if (renderFlag && !noRender) {
+      const result = render({ ...pathOptions, forceRender });
       console.log(result.changed ? 'Updated the README project status block.' : 'README project status block already up to date.');
     }
     return 0;
   }
+  const recordIdx = argv.indexOf('--record');
+  if (recordIdx !== -1) {
+    const raw = argv[recordIdx + 1];
+    if (!raw || raw.startsWith('--')) fail('Usage: node scripts/stats.cjs --record <json-file-or-inline-JSON>');
+    const { document, checkedProviders } = record(raw, pathOptions);
+    const names = checkedProviders.length ? checkedProviders.join(', ') : 'totals only';
+    console.log(`Recorded check run #${document.totals.spamChecksRun} (${names}). Last check ${document.lastCheck}.`);
+    const p = paths(root, pathOptions);
+    const skipRender = noRender || (!isPublicStatsFile(p) && !forceRender);
+    if (!skipRender) {
+      const result = render({ ...pathOptions, forceRender });
+      console.log(result.changed ? 'Updated the README project status block.' : 'README project status block already up to date.');
+    } else if (!isPublicStatsFile(p) && !noRender && !forceRender) {
+      console.log('Skipped README render because this is a local stats file. Pass --force-render only if you want your own clone README updated.');
+    }
+    return 0;
+  }
   if (renderFlag) {
-    const result = render({ root, check: checkFlag });
+    const result = render({ ...pathOptions, check: checkFlag, forceRender });
     if (checkFlag) console.log('README project status block is in sync with stats/stats.json.');
     else console.log(result.changed ? 'Updated the README project status block.' : 'README project status block already up to date.');
     return 0;
@@ -375,8 +473,8 @@ if (require.main === module) {
 
 module.exports = {
   COUNT_KEYS, RECORD_KEYS, START, END, ROOT,
-  paths, emptyCounts, loadStats, saveStats, validateStats,
+  paths, emptyCounts, emptyDocument, isPublicStatsFile, loadStats, saveStats, validateStats,
   nowAmsterdamIso, formatAmsterdamDay, formatAmsterdamStamp,
   deriveFromRepo, countMergedRulePrs, record, render, renderBlock,
-  replaceReadmeSection, parseRecordInput, main
+  replaceReadmeSection, parseRecordInput, reset, initLocal, main
 };

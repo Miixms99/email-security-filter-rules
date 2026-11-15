@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/miixms99/email-security-filter-rules/config/accounts.schema.json",
+  "title": "Local mailbox account list",
+  "description": "Local-only list of Gmail and Outlook mailboxes you manage with this package. No passwords, tokens, addresses or other secrets. The real file config/accounts.json is gitignored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "accounts"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "accounts": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/account" }
+    }
+  },
+  "$defs": {
+    "account": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "label"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+          "description": "Stable local identifier. Not an email address."
+        },
+        "provider": { "type": "string", "enum": ["gmail", "outlook"] },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Human-readable name only, for example Personal Gmail. Do not put an email address here."
+        },
+        "enabled": { "type": "boolean", "default": true },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "treatUnsolicitedGamblingAsSpam": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}
