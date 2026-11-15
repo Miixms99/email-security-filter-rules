@@ -44,3 +44,7 @@ Counts are aggregates only: never put addresses, subjects or personal data in `s
 3. Add the rule to the README table and bump `filterRevision`.
 
 `node scripts/validate-rules.cjs` can be used on its own. Do not add a `$schema` property to `rules/filter-rules.json` unless that document is being intentionally revised; the validator loads the schema file directly.
+
+## Enrichment in the daily check
+
+The maintained project's daily spam-check enables URLhaus host lookups by setting `URLHAUS_AUTH_KEY` from a secret kept outside the repository. Only domain or host names are sent. Self-hosters should use their own free abuse.ch Auth-Key (sign in with an email link). Spamhaus DQS is not used by the maintained project, because a free account requires mail-server attestation, and remains inactive without `SPAMHAUS_DQS_KEY`.
