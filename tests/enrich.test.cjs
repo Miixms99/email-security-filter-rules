@@ -22,6 +22,12 @@ const {loadedCache}=require('./helpers/fixtures.cjs');
  await E.queryDbl('bad.example','abcdefghijklmnopqrstuvwxyz',async n=>{queried=n;return ['127.0.1.2'];});
  assert.equal(queried,'bad.example.abcdefghijklmnopqrstuvwxyz.dbl.dq.spamhaus.net');
  assert.equal((await E.queryDbl('x.example','bad key!',nx)).reason,'invalid_dqs_key_format');
+ // Lookup pool: bounded concurrency, every item processed once, errors propagate.
+ let active=0,peak=0;const seen=[];
+ await E.pool(Array.from({length:20},(_,i)=>i),4,async i=>{active++;peak=Math.max(peak,active);await new Promise(r=>setTimeout(r,2));seen.push(i);active--;});
+ assert.equal(seen.length,20);assert.equal(new Set(seen).size,20);assert.ok(peak>1&&peak<=4,'pool concurrency '+peak);
+ await E.pool([],4,async()=>{throw new Error('never');});
+ await assert.rejects(E.pool([1,2,3],2,async()=>{throw new Error('boom');}),/boom/);
  // RDAP and URLhaus parsing.
  const now=Date.parse('2026-11-14T12:00:00Z');
  assert.deepEqual(E.interpretRdap({events:[{eventAction:'registration',eventDate:'2026-11-04T00:00:00Z'}]},now),{status:'known',registeredAt:'2026-11-04',ageDays:10});

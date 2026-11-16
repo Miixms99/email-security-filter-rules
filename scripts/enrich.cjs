@@ -21,7 +21,14 @@ const HISTORY_FILE = 'contact-history.json';
 const MAX_DOMAINS = 50, TTL = { registration: 7 * 86400000, urlhaus: 6 * 3600000, dbl: 3600000, error: 1800000 };
 const DAY = 86400000;
 const UA = 'mailshield/0.5 (+https://github.com/miixms99/mailshield)';
+const CONCURRENCY = 6;
 function fail(message) { throw new Error(message); }
+// Runs `task` over `items` with at most `limit` in flight; rejects on the first thrown error.
+async function pool(items, limit, task) {
+  let next = 0;
+  const worker = async () => { while (next < items.length) await task(items[next++]); };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
 const DOMAIN_RE = /^(?=.{3,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
 // ---- Spamhaus DBL (DQS) ----------------------------------------------------
@@ -138,18 +145,23 @@ async function enrich(input, { env = process.env, now = Date.now(), fetchImpl = 
   const result = { schemaVersion: 1, generatedAt: new Date(now).toISOString(), sources: {
     rdap: offline ? 'offline' : 'enabled', urlhaus: urlhausKey ? 'enabled' : 'inactive_no_URLHAUS_AUTH_KEY', spamhausDbl: dqsKey ? 'enabled' : 'inactive_no_SPAMHAUS_DQS_KEY',
     firstContact: historyPath(env.EMAILCONTROL_DATA_DIR) ? 'enabled' : 'inactive_no_EMAILCONTROL_DATA_DIR' }, domains: {}, hosts: {}, senders: {} };
-  for (const d of domains) {
-    result.domains[d] = { registration: await cached('registration', d, () => queryRdap(d, fetchImpl, now)) };
+  // Lookups run through a small pool; result keys are created up front so the
+  // output order stays identical to the (deterministic) collection order.
+  for (const d of domains) result.domains[d] = {};
+  for (const h of hosts) result.hosts[h] = {};
+  await pool(domains, CONCURRENCY, async d => {
+    result.domains[d].registration = await cached('registration', d, () => queryRdap(d, fetchImpl, now));
     if (dqsKey) result.domains[d].dbl = await cached('dbl', d, () => queryDbl(d, dqsKey, resolve4));
-  }
-  if (urlhausKey) for (const h of hosts) result.hosts[h] = { urlhaus: await cached('urlhaus', h, () => queryUrlhaus(h, urlhausKey, fetchImpl)) };
+  });
+  if (urlhausKey) await pool(hosts, CONCURRENCY, async h => { result.hosts[h].urlhaus = await cached('urlhaus', h, () => queryUrlhaus(h, urlhausKey, fetchImpl)); });
+  else for (const h of hosts) delete result.hosts[h];
   const file = historyPath(env.EMAILCONTROL_DATA_DIR);
   if (file) {
     const history = loadHistory(file);
     for (const s of senders) result.senders[s] = { firstContact: !history.hashes[contactHash(history, s)] };
     if (input.recordContacts === true) { for (const s of senders) history.hashes[contactHash(history, s)] ||= new Date(now).toISOString().slice(0, 10); if (persist) await saveHistory(file, history); }
   }
-  for (const [k, v] of Object.entries(store.entries)) if (now - v.at > TTL.registration) delete store.entries[k];
+  for (const [k, v] of Object.entries(store.entries)) if (now - v.at >= (v.value?.status === 'error' ? TTL.error : TTL[k.slice(0, k.indexOf(':'))] ?? TTL.registration)) delete store.entries[k];
   if (persist && !offline) await writeEnrichCache(store);
   return result;
 }
@@ -162,4 +174,4 @@ if (require.main === module) {
     enrich(JSON.parse(text), { offline: args.includes('--offline') }).then(r => process.stdout.write(JSON.stringify(r, null, 2) + '\n')).catch(e => { console.error(JSON.stringify({ status: 'failed', reason: e.message })); process.exitCode = 1; });
   });
 }
-module.exports = { enrich, interpretDbl, queryDbl, interpretRdap, queryRdap, interpretUrlhaus, queryUrlhaus, loadHistory, contactHash, historyPath, collect };
+module.exports = { enrich, pool, interpretDbl, queryDbl, interpretRdap, queryRdap, interpretUrlhaus, queryUrlhaus, loadHistory, contactHash, historyPath, collect };
