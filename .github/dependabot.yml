@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # Actions are pinned to commit SHAs; Dependabot proposes SHA bumps via pull request.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci

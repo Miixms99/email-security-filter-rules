@@ -1,0 +1,4 @@
+# Detection rules and the pipeline that publishes them need owner review.
+/rules/ @Miixms99
+/scripts/ @Miixms99
+/.github/ @Miixms99
